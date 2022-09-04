@@ -1,11 +1,15 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example';
+export type Channels = 'import-project' | "get-projects" | "call-project-commands";
 
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
-    sendMessage(channel: Channels, args: unknown[]) {
-      ipcRenderer.send(channel, args);
+    invoke(channel: Channels, args: unknown[]): Promise<any> {
+      return new Promise(async (resolve, reject) => {
+        ipcRenderer.invoke(channel, args)
+          .then(response => resolve(response))
+          .catch(error => reject(error));
+      });
     },
     on(channel: Channels, func: (...args: unknown[]) => void) {
       const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>

@@ -14,7 +14,8 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-
+import fs from 'fs';
+import { exec } from 'child_process';
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -24,12 +25,6 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
-});
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -80,7 +75,7 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
-    resizable: false
+    resizable: false,
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
@@ -117,6 +112,40 @@ const createWindow = async () => {
 /**
  * Add event listeners...
  */
+
+ipcMain.handle('import-project', async (e, arg) => {
+  e.preventDefault();
+  // qui handlo l'import del progetto
+  fs.appendFile(path.join(__dirname, 'projects.txt'), arg[0], (err) => {
+    if (err) console.log(err);
+  });
+  return 'ok';
+});
+
+ipcMain.handle('get-projects', async (e, _arg) => {
+  e.preventDefault();
+  if (fs.existsSync(path.join(__dirname, 'projects.txt')))
+    return fs.readFileSync(path.join(__dirname, 'projects.txt'), 'utf8');
+  else return '';
+});
+
+ipcMain.handle('call-project-commands', async (e, arg) => {
+  e.preventDefault();
+
+  const splittedDir = arg[0].dir.split('/');
+  splittedDir.splice(splittedDir.length - 1, 1);
+  const dir = splittedDir.join('/');
+
+  exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
+    if (error) {
+      console.log(`error: ${error.message}`);
+    }
+    if (stderr) {
+      console.log(`stderr: ${stderr}`);
+    }
+  });
+  return "Comandi eseguiti con successo.";
+});
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
