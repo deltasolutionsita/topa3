@@ -75,6 +75,7 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
+    frame: false,
     resizable: false,
   });
 
@@ -136,14 +137,15 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
   splittedDir.splice(splittedDir.length - 1, 1);
   const dir = splittedDir.join('/');
 
-  exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
+  const shell = exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
     if (error) {
       console.log(`error: ${error.message}`);
     }
     if (stderr) {
       console.log(`stderr: ${stderr}`);
     }
-  });
+  })
+  console.log(shell.stdout)
   return "Comandi eseguiti con successo.";
 });
 
