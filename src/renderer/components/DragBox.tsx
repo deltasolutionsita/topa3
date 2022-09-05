@@ -4,8 +4,13 @@ import { BiImport } from 'react-icons/bi';
 import { Buffer } from 'buffer';
 
 export function getWorkspaceFolderName(path: string) {
-  const pathArray = path.split('/');
-  return pathArray[pathArray.length - 2];
+  let r;
+  if(path.includes('\\')) {
+    r = path.split('\\');
+  } else {
+    r = path.split('/');
+  }
+  return r[r.length - 2];
 }
 
 function DragBox() {
