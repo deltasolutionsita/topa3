@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import DragBox from './components/DragBox';
 import ProjectDashboard from './components/ProjectDashboard';
+import TerminalOutput from './components/TerminalOutput';
 
 const Main = () => {
   const [projects, setProjects] = useState<boolean>();
@@ -57,6 +58,7 @@ const Main = () => {
         <SimpleGrid placeItems={'center'}>
           <DragBox />
         </SimpleGrid>
+        <TerminalOutput />
       </>
     );
   }

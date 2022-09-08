@@ -146,8 +146,11 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
       console.log(`stderr: ${stderr}`);
     }
   })
-  console.log(shell.stdout)
-  return "Comandi eseguiti con successo.";
+  shell.stdout && shell.stdout.on('data', (data) => {
+    mainWindow?.webContents.send('project-commands-output', data);
+    console.log(data);
+  });
+  return "ok!";
 });
 
 app.on('window-all-closed', () => {

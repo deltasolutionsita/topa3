@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'import-project' | "get-projects" | "call-project-commands";
+export type Channels = 'import-project' | "get-projects" | "call-project-commands" | "project-commands-output";
 
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
