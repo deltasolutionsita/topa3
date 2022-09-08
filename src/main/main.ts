@@ -116,7 +116,7 @@ const createWindow = async () => {
 ipcMain.handle('import-project', async (e, arg) => {
   e.preventDefault();
   // qui handlo l'import del progetto
-  fs.appendFile(path.join(__dirname, 'projects.txt'), arg[0], (err) => {
+  fs.appendFile(app.getPath("documents") + "/projects.txt", arg[0], (err) => {
     if (err) console.log(err);
   });
   return 'ok';
@@ -124,8 +124,10 @@ ipcMain.handle('import-project', async (e, arg) => {
 
 ipcMain.handle('get-projects', async (e, _arg) => {
   e.preventDefault();
-  if (fs.existsSync(path.join(__dirname, 'projects.txt')))
-    return fs.readFileSync(path.join(__dirname, 'projects.txt'), 'utf8');
+  const projectFileDir = app.getPath("documents") + "/projects.txt";
+
+  if (fs.existsSync(projectFileDir))
+    return fs.readFileSync(projectFileDir, 'utf8');
   else return '';
 });
 
