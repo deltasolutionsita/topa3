@@ -66,8 +66,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1280,
+    height: 800,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       sandbox: false,
@@ -113,8 +113,7 @@ const createWindow = async () => {
  * Add event listeners...
  */
 
-ipcMain.handle('import-project', async (e, arg) => {
-  e.preventDefault();
+ipcMain.handle('import-project', async (_e, arg) => {
   // qui handlo l'import del progetto
   fs.appendFile(app.getPath("documents") + "/projects.txt", arg[0], (err) => {
     if (err) console.log(err);
@@ -136,8 +135,9 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
 
   const splittedDir = arg[0].dir.split('/');
   splittedDir.splice(splittedDir.length - 1, 1);
-  const dir = splittedDir.join('/');
-
+  const dir: string = splittedDir.join('/');
+  const projectName = dir.split("/")[dir.split("/").length - 1];
+  
   const shell = exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
     if (error) {
       console.log(`error: ${error.message}`);
@@ -147,10 +147,16 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
     }
   })
   shell.stdout && shell.stdout.on('data', (data) => {
-    mainWindow?.webContents.send('project-commands-output', data);
+    mainWindow?.webContents.send('project-commands-output', {
+      terminalData: data,
+      projectName
+    });
     console.log(data);
   });
-  return "ok!";
+  return {
+    message: "Comandi Eseguiti!",
+    projectName
+  };
 });
 
 app.on('window-all-closed', () => {

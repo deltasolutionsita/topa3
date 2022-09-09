@@ -1,34 +1,51 @@
-import { Box } from "@chakra-ui/react"
-import { useEffect, useState } from "react"
+import { Box, Divider, Text } from '@chakra-ui/react';
+import { useContext, useEffect, useState } from 'react';
+import { TSContext } from 'renderer/providers/TerminalShown';
+import stripAnsi from 'strip-ansi';
 
 function TerminalOutput() {
-  const [terminalOutput, setTerminalOutput] = useState<any[]>([])
+  const [isTerminalShown, setIsTerminalShown] = useContext(TSContext);
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
+  const [projectName, setProjectName] = useState('');
+  
   useEffect(() => {
-    window.electron.ipcRenderer.on("project-commands-output", (out) => {
-      setTerminalOutput((prevTerminalOutput) => [...prevTerminalOutput, out])
-    })
-  }, [])
+    terminalOutput.length === 0 && setIsTerminalShown(false);
+
+    window.electron.ipcRenderer.on('project-commands-output', (_out) => {
+      const out = _out as { terminalData: string; projectName: string };
+
+      setIsTerminalShown(true);
+      setProjectName(out.projectName);
+      setTerminalOutput((prevTerminalOutput) => [
+        ...prevTerminalOutput,
+        stripAnsi(out.terminalData as string),
+      ]);
+    });
+  }, []);
+
   return (
-    <Box>
-      {terminalOutput.map((outLine, i) => {
-        return <p key={i}>{outLine}</p>
-      })}
+    <Box
+      bg={'black'}
+      p="2%"
+      display={isTerminalShown ? 'block' : 'none'}
+    >
+      <Text color="#EDEDED">Terminal Output | last output: {projectName}</Text>
+      <Divider mt="2%" />
+      <Box p="3%" mt="-1%">
+        {terminalOutput.map((outLine, i) => {
+          return (
+            <Text
+              fontFamily={'monospace'}
+              key={i}
+              color={outLine.includes('$') ? 'yellow.300' : '#EDEDED'}
+            >
+              {outLine}
+            </Text>
+          );
+        })}
+      </Box>
     </Box>
-  )
+  );
 }
 
-export default TerminalOutput
-
-/**
- * const line = out as string;
-      const lineContainsHttp = line.includes("http://")
-
-      if(lineContainsHttp) {
-        const rx = /http:\/\/\S+/gm
-        const url = rx.exec(line)
-        if(url) {
-          console.log(url)
-        }
-      }
-
- */
+export default TerminalOutput;

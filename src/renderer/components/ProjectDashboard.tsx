@@ -25,7 +25,7 @@ function ProjectDashboard() {
   }, []);
 
   return (
-    <Box mt="10%">
+    <Box mt="3%">
       <SimpleGrid columns={3} placeItems="center">
         {projects.map((project, i) => {
           const parsedDir = getWorkspaceFolderName(project.dir);
@@ -36,12 +36,12 @@ function ProjectDashboard() {
               onClick={async () => {
                 window.electron.ipcRenderer
                   .invoke('call-project-commands', [project])
-                  .then((r) => alert(r))
+                  .then((r) => alert(r.message))
                   .catch((e) => alert(e));
               }}
               key={i}
               borderWidth={'2px'}
-              p="10%"
+              p="8%"
             >
               <h1>{parsedDir}</h1>
             </Button>

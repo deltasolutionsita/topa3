@@ -18,7 +18,7 @@ function DragBox() {
   const [fileInfos, setFileInfos] = useState<File>();
 
   return (
-    <Box mt="10%" borderWidth={'2px'} w="400px" h="250px" borderRadius={'3xl'}>
+    <Box mt="5%" borderWidth={'2px'} w="400px" h="250px" borderRadius={'3xl'}>
       <SimpleGrid placeItems={'center'}>
         {typeof fileInfos === 'undefined' && (
           <>
@@ -51,8 +51,7 @@ function DragBox() {
             <SimpleGrid columns={2} spacing={'4'} mt="20%">
               <Button
                 colorScheme={'green'}
-                onClick={async (e) => {
-                  e.preventDefault();
+                onClick={async () => {
                   const filePath = fileInfos.path;
                   const fileContent = await fileInfos.text();
                   const finalContent = `${filePath}:::${fileContent}---`;
@@ -63,6 +62,7 @@ function DragBox() {
                   ])
                     .then((res) => {
                       res === "ok" && alert("Progetto importato con successo!")
+                      window.location.reload()
                     })
                     .catch(() => {
                       alert("Errore nell'importazione del progetto");

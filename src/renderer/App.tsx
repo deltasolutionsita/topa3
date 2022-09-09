@@ -4,24 +4,29 @@ import {
   Heading,
   SimpleGrid,
   Text,
+  useColorMode,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import DragBox from './components/DragBox';
+import Navbar from './components/Navbar';
 import ProjectDashboard from './components/ProjectDashboard';
 import TerminalOutput from './components/TerminalOutput';
+import TerminalShown from './providers/TerminalShown';
 
 const Main = () => {
   const [projects, setProjects] = useState<boolean>();
+  const { setColorMode } = useColorMode();
 
   useEffect(() => {
+    setColorMode('dark');
     window.electron.ipcRenderer
       .invoke('get-projects', [])
       .then((res: string) => {
         if (res === '') {
-          setProjects(false)
+          setProjects(false);
         } else {
-          setProjects(true)
+          setProjects(true);
         }
       });
   }, []);
@@ -53,12 +58,19 @@ const Main = () => {
   } else {
     return (
       <>
-        <Heading textAlign={"center"} mt="5%">I tuoi progetti</Heading>
-        <ProjectDashboard />
-        <SimpleGrid placeItems={'center'}>
-          <DragBox />
-        </SimpleGrid>
-        <TerminalOutput />
+        <TerminalShown>
+          <Navbar />
+          <Box mt="-2%">
+            <Heading textAlign={'center'} mt="5%">
+              I tuoi progetti
+            </Heading>
+            <ProjectDashboard />
+            <SimpleGrid placeItems={'center'}>
+              <DragBox />
+            </SimpleGrid>
+          </Box>
+          <TerminalOutput />
+        </TerminalShown>
       </>
     );
   }
