@@ -65,9 +65,6 @@ const Main = () => {
               I tuoi progetti
             </Heading>
             <ProjectDashboard />
-            <SimpleGrid placeItems={'center'}>
-              <DragBox />
-            </SimpleGrid>
           </Box>
           <TerminalOutput />
         </TerminalShown>

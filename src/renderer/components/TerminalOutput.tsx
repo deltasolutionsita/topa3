@@ -28,6 +28,7 @@ function TerminalOutput() {
       bg={'black'}
       p="2%"
       display={isTerminalShown ? 'block' : 'none'}
+      mt="5%"
     >
       <Text color="#EDEDED">Terminal Output | last output: {projectName}</Text>
       <Divider mt="2%" />

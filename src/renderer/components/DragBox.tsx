@@ -1,7 +1,9 @@
-import { Box, Button, Icon, Input, SimpleGrid, Text } from '@chakra-ui/react';
+import { Box, Button, Code, Icon, Input, SimpleGrid, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { BiImport } from 'react-icons/bi';
 import { Buffer } from 'buffer';
+import { fileNotValid, projectImported } from 'renderer/toasts';
+import { sleep } from './consts';
 
 export function getWorkspaceFolderName(path: string) {
   let r;
@@ -11,6 +13,16 @@ export function getWorkspaceFolderName(path: string) {
     r = path.split('/');
   }
   return r[r.length - 2];
+}
+
+export function getFileName(path: string) {
+  let r;
+  if(path.includes('\\')) {
+    r = path.split('\\');
+  } else {
+    r = path.split('/');
+  }
+  return r[r.length - 1];
 }
 
 function DragBox() {
@@ -46,7 +58,7 @@ function DragBox() {
               Stai per importare il progetto
             </Text>
             <Text textAlign={'center'} mt="20%">
-              <code>{getWorkspaceFolderName(fileInfos.path)}</code>
+              <Code>{getWorkspaceFolderName(fileInfos.path)}</Code>
             </Text>
             <SimpleGrid columns={2} spacing={'4'} mt="20%">
               <Button
@@ -56,13 +68,14 @@ function DragBox() {
                   const fileContent = await fileInfos.text();
                   const finalContent = `${filePath}:::${fileContent}---`;
                   const buffer = Buffer.from(finalContent);
-
-                  window.electron.ipcRenderer.invoke('import-project', [
+                  
+                  if(getFileName(filePath) !== '_topa3') return fileNotValid()
+                  
+                  return window.electron.ipcRenderer.invoke('import-project', [
                     buffer,
                   ])
-                    .then((res) => {
-                      res === "ok" && alert("Progetto importato con successo!")
-                      window.location.reload()
+                    .then(async (res) => {
+                      res === "ok" && (projectImported(), await sleep(1100), window.location.reload());
                     })
                     .catch(() => {
                       alert("Errore nell'importazione del progetto");

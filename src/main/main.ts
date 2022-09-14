@@ -130,6 +130,20 @@ ipcMain.handle('get-projects', async (e, _arg) => {
   else return '';
 });
 
+ipcMain.handle("remove-project", async (_, arg) => {
+  const projectFileDir = app.getPath("documents") + "/projects.txt";
+  const composed = `${arg[0].dir}:::${arg[0].commands}`;
+
+  if (fs.existsSync(projectFileDir)) {
+    const projects = fs.readFileSync(projectFileDir, 'utf8').split("---");
+    const newProjects = projects.filter((p) => p !== composed).join("---");
+    fs.writeFileSync(projectFileDir, newProjects);
+    return "done";
+  }
+
+  return "Qualcosa è andato storto, in realtà non dovresti mai vedere questo messaggio, ma evidentemente hai cancellato il file projects.txt";
+})
+
 ipcMain.handle('call-project-commands', async (e, arg) => {
   e.preventDefault();
 
@@ -154,7 +168,7 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
     console.log(data);
   });
   return {
-    message: "Comandi Eseguiti!",
+    message: "done",
     projectName
   };
 });

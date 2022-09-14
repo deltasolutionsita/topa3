@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   Box,
   Flex,
@@ -7,7 +7,18 @@ import {
   IconButton,
   useDisclosure,
   useColorModeValue,
+  Spacer,
+  Button,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
 } from '@chakra-ui/react';
+import { AiOutlinePlus } from 'react-icons/ai';
+import DragBox from './DragBox';
 
 const NavLink = ({ children }: { children: ReactNode }) => (
   <Link
@@ -18,13 +29,15 @@ const NavLink = ({ children }: { children: ReactNode }) => (
       textDecoration: 'none',
       bg: useColorModeValue('gray.200', 'gray.700'),
     }}
-    href={'#'}>
+    href={'#'}
+  >
     {children}
   </Link>
 );
 
 export default function Navbar() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <>
@@ -40,14 +53,44 @@ export default function Navbar() {
             <HStack
               as={'nav'}
               spacing={4}
-              display={{ base: 'none', md: 'flex' }}>
+              display={{ base: 'none', md: 'flex' }}
+            >
               <NavLink>1</NavLink>
               <NavLink>2</NavLink>
               <NavLink>3</NavLink>
             </HStack>
           </HStack>
+          <Spacer />
+          <Button
+            colorScheme={'teal'}
+            leftIcon={<AiOutlinePlus />}
+            variant="outline"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Importa un altro progetto
+          </Button>
         </Flex>
       </Box>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Importa</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <DragBox />
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={() => setIsModalOpen(false)}
+            >
+              Annulla
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
