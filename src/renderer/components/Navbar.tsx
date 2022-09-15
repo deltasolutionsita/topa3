@@ -82,7 +82,7 @@ export default function Navbar() {
 
           <ModalFooter>
             <Button
-              colorScheme="blue"
+              variant={"ghost"}
               mr={3}
               onClick={() => setIsModalOpen(false)}
             >

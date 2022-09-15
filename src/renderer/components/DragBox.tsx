@@ -62,7 +62,7 @@ function DragBox() {
             </Text>
             <SimpleGrid columns={2} spacing={'4'} mt="20%">
               <Button
-                colorScheme={'green'}
+                colorScheme={'teal'}
                 onClick={async () => {
                   const filePath = fileInfos.path;
                   const fileContent = await fileInfos.text();
@@ -85,6 +85,7 @@ function DragBox() {
                 <Text>Conferma</Text>
               </Button>
               <Button
+                variant={"ghost"}
                 onClick={() => {
                   setFileInfos(undefined);
                   setIsInputDisplayed(true);

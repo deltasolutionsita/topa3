@@ -9,7 +9,7 @@ const toastGen = ({ title, status }: { title: string, status: UseToastOptions["s
     duration: 3000,
     isClosable: false,
     variant: "left-accent",
-    position: "top-left"
+    position: "top"
   })
 }
 
