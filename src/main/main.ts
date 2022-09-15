@@ -176,12 +176,12 @@ ipcMain.handle("remove-project", async (_, arg) => {
 
 ipcMain.handle('call-project-commands', async (e, arg) => {
   e.preventDefault();
-
-  const splittedDir = arg[0].dir.split('/');
+  const splitter = process.platform === "win32" ? "\\" : "/";
+  const splittedDir = arg[0].dir.split(splitter);
   splittedDir.splice(splittedDir.length - 1, 1);
 
-  const dir: string = splittedDir.join('/');
-  const projectName = dir.split("/")[dir.split("/").length - 1];
+  const dir: string = splittedDir.join(splitter);
+  const projectName = dir.split(splitter)[dir.split(splitter).length - 1];
   
   const shell = exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
     if (error) {
