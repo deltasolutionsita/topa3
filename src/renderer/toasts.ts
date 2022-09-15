@@ -15,7 +15,7 @@ const toastGen = ({ title, status }: { title: string, status: UseToastOptions["s
 
 export const commandsExecuted = () => {
   return toastGen({
-    title: "Comandi Eseguiti con successo",
+    title: "Comandi eseguiti con successo",
     status: "success",
   })
 }

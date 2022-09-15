@@ -7,18 +7,22 @@ import {
   useColorMode,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { MemoryRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import DragBox from './components/DragBox';
 import Navbar from './components/Navbar';
 import ProjectDashboard from './components/ProjectDashboard';
 import TerminalOutput from './components/TerminalOutput';
 import TerminalShown from './providers/TerminalShown';
+import SplashScreen from './splashscreen/SplashScreen';
 
 const Main = () => {
   const [projects, setProjects] = useState<boolean>();
   const { setColorMode } = useColorMode();
+  const splash = new URLSearchParams(window.location.search).get("splash")
+  const navigate = useNavigate()
 
   useEffect(() => {
+    splash !== undefined && splash === "true" && navigate("/splash")
     setColorMode('dark');
     window.electron.ipcRenderer
       .invoke('get-projects', [])
@@ -79,6 +83,7 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Main />} />
+          <Route path="/splash" element={<SplashScreen />} />
         </Routes>
       </Router>
     </ChakraProvider>

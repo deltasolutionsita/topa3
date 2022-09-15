@@ -16,6 +16,9 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import fs from 'fs';
 import { exec } from 'child_process';
+import { configureStore } from '@reduxjs/toolkit';
+import { addShell, removeShell } from "./store/shellsSlice"
+import reducer from "./store/configureStore"
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -25,6 +28,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let splashScreen: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -37,6 +41,10 @@ const isDebug =
 if (isDebug) {
   require('electron-debug')();
 }
+
+export const store = configureStore({
+  reducer
+})
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -78,16 +86,38 @@ const createWindow = async () => {
     resizable: false,
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  splashScreen = new BrowserWindow({
+    width: 500,
+    height: 300,
+    transparent: false,
+    frame: false,
+    alwaysOnTop: false, // true
+    resizable: false,
+    webPreferences: {
+      sandbox: false,
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, '../../.erb/dll/preload.js'),
+      devTools: false,
+    },
+  })
 
-  mainWindow.on('ready-to-show', () => {
+  splashScreen.loadURL(resolveHtmlPath("index.html", true));
+
+  mainWindow.loadURL(resolveHtmlPath('index.html', false));
+
+  mainWindow && mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize();
     } else {
-      mainWindow.show();
+      setTimeout(() => {
+        splashScreen && splashScreen.close();
+        mainWindow && mainWindow.show();
+        mainWindow && mainWindow.focus();
+      }, 1500)
     }
   });
 
@@ -149,6 +179,7 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
 
   const splittedDir = arg[0].dir.split('/');
   splittedDir.splice(splittedDir.length - 1, 1);
+
   const dir: string = splittedDir.join('/');
   const projectName = dir.split("/")[dir.split("/").length - 1];
   
@@ -160,18 +191,52 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
       console.log(`stderr: ${stderr}`);
     }
   })
+
+  store.dispatch(addShell({
+    name: projectName,
+    pid: shell.pid!,
+  }));
+
   shell.stdout && shell.stdout.on('data', (data) => {
     mainWindow?.webContents.send('project-commands-output', {
       terminalData: data,
       projectName
     });
-    console.log(data);
   });
+
   return {
     message: "done",
     projectName
   };
 });
+
+ipcMain.handle("get-shells", () => {
+  const shells = store.getState().shells;
+
+  // shells.forEach((shell) => {
+  //   mainWindow?.webContents.send("get-shells-result", shell);
+  // })
+  return shells
+})
+
+ipcMain.handle("kill-shell", (_e, arg) => {
+  const pid = arg[0];
+
+  exec("kill -9 " + pid, (error, _stdout, stderr) => {
+    if (error) {
+      console.log(`error: ${error.message}`);
+    }
+    if (stderr) {
+      console.log(`stderr: ${stderr}`);
+    }
+  })
+
+  return "done";
+})
+
+ipcMain.handle("open-github", () => {
+  shell.openExternal("https://github.com/deltasolutionsita/topa3")
+})
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
