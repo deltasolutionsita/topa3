@@ -17,7 +17,7 @@ import { resolveHtmlPath } from './util';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { configureStore } from '@reduxjs/toolkit';
-import { addShell, removeShell } from "./store/shellsSlice"
+import { addShell } from "./store/shellsSlice"
 import reducer from "./store/configureStore"
 class AppUpdater {
   constructor() {
@@ -192,18 +192,19 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
     }
   })
 
+  
   store.dispatch(addShell({
     name: projectName,
     pid: shell.pid!,
   }));
-
+  
   shell.stdout && shell.stdout.on('data', (data) => {
     mainWindow?.webContents.send('project-commands-output', {
       terminalData: data,
       projectName
     });
   });
-
+  
   return {
     message: "done",
     projectName
