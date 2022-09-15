@@ -71,7 +71,7 @@ export default function Navbar() {
           </Button>
         </Flex>
       </Box>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal motionPreset="slideInBottom" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Importa</ModalHeader>

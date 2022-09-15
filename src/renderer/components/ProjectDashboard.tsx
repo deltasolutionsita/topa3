@@ -127,7 +127,7 @@ function ProjectDashboard() {
           })}
         </SimpleGrid>
       </Box>
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal motionPreset="slideInBottom" isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{getWorkspaceFolderName(hoveredItem.dir)}</ModalHeader>
