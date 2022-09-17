@@ -15,9 +15,8 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import fs from 'fs';
-import { exec } from 'child_process';
+import { ChildProcess, exec } from 'child_process';
 import { configureStore } from '@reduxjs/toolkit';
-import { addShell } from "./store/shellsSlice"
 import reducer from "./store/configureStore"
 class AppUpdater {
   constructor() {
@@ -29,6 +28,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 let splashScreen: BrowserWindow | null = null;
+let terminalWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -45,6 +45,8 @@ if (isDebug) {
 export const store = configureStore({
   reducer
 })
+
+export const shells: ChildProcess[] = []
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -102,9 +104,25 @@ const createWindow = async () => {
     },
   })
 
-  splashScreen.loadURL(resolveHtmlPath("index.html", true));
+  terminalWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    transparent: false,
+    frame: true,
+    resizable: true,
+    webPreferences: {
+      sandbox: false,
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, '../../.erb/dll/preload.js'),
+      devTools: true,
+    },
+    show: false
+  })
 
-  mainWindow.loadURL(resolveHtmlPath('index.html', false));
+  splashScreen.loadURL(resolveHtmlPath("index.html", true, false));
+  mainWindow.loadURL(resolveHtmlPath('index.html', false, false));
+  terminalWindow.loadURL(resolveHtmlPath('index.html', false, true));
 
   mainWindow && mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -174,8 +192,9 @@ ipcMain.handle("remove-project", async (_, arg) => {
   return "Qualcosa è andato storto, in realtà non dovresti mai vedere questo messaggio, ma evidentemente hai cancellato il file projects.txt";
 })
 
-ipcMain.handle('call-project-commands', async (e, arg) => {
+ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
+  
   const splitter = process.platform === "win32" ? "\\" : "/";
   const splittedDir = arg[0].dir.split(splitter);
   splittedDir.splice(splittedDir.length - 1, 1);
@@ -192,46 +211,27 @@ ipcMain.handle('call-project-commands', async (e, arg) => {
     }
   })
 
-  
-  store.dispatch(addShell({
-    name: projectName,
-    pid: shell.pid!,
-  }));
-  
   shell.stdout && shell.stdout.on('data', (data) => {
-    mainWindow?.webContents.send('project-commands-output', {
+    terminalWindow && terminalWindow.show()
+    terminalWindow?.webContents.send('shell-output', {
       terminalData: data,
       projectName
     });
   });
+
+  shells.push(shell);
   
   return {
     message: "done",
-    projectName
+    projectName,
   };
 });
 
-ipcMain.handle("get-shells", () => {
-  const shells = store.getState().shells;
-
-  // shells.forEach((shell) => {
-  //   mainWindow?.webContents.send("get-shells-result", shell);
-  // })
-  return shells
-})
-
-ipcMain.handle("kill-shell", (_e, arg) => {
-  const pid = arg[0];
-
-  exec("kill -9 " + pid, (error, _stdout, stderr) => {
-    if (error) {
-      console.log(`error: ${error.message}`);
-    }
-    if (stderr) {
-      console.log(`stderr: ${stderr}`);
-    }
-  })
-
+ipcMain.handle("kill-shells", (_e, _arg) => {
+  // terminalWindow && terminalWindow.close()
+  shells.forEach((shell) => {
+    shell.kill()
+  });
   return "done";
 })
 

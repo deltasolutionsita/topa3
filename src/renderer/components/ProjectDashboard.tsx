@@ -101,7 +101,7 @@ function ProjectDashboard() {
                             size="sm"
                             onClick={() => {
                               window.electron.ipcRenderer
-                                .invoke('call-project-commands', [project])
+                                .invoke('start-shell', [project])
                                 .then((r) => {
                                   if (r.message === 'done') {
                                     commandsExecuted();

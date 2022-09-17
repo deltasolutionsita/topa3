@@ -19,10 +19,13 @@ const Main = () => {
   const [projects, setProjects] = useState<boolean>();
   const { setColorMode } = useColorMode();
   const splash = new URLSearchParams(window.location.search).get("splash")
+  const terminal = new URLSearchParams(window.location.search).get("terminal")
+
   const navigate = useNavigate()
 
   useEffect(() => {
     splash !== undefined && splash === "true" && navigate("/splash")
+    terminal !== undefined && terminal === "true" && navigate("/terminal")
     setColorMode('dark');
     window.electron.ipcRenderer
       .invoke('get-projects', [])
@@ -70,7 +73,6 @@ const Main = () => {
             </Heading>
             <ProjectDashboard />
           </Box>
-          <TerminalOutput />
         </TerminalShown>
       </>
     );
@@ -84,6 +86,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/splash" element={<SplashScreen />} />
+          <Route path="/terminal" element={<TerminalOutput />} />
         </Routes>
       </Router>
     </ChakraProvider>
