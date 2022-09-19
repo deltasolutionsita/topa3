@@ -9,15 +9,17 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { getStartShellArguments, resolveHtmlPath } from './util';
 import fs from 'fs';
-import { ChildProcess, exec } from 'child_process';
+import { ChildProcess } from 'child_process';
 import { configureStore } from '@reduxjs/toolkit';
-import reducer from "./store/configureStore"
+import reducer from './store/configureStore';
+import _shell from 'shelljs';
+import os from 'os';
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -43,10 +45,10 @@ if (isDebug) {
 }
 
 export const store = configureStore({
-  reducer
-})
+  reducer,
+});
 
-export const shells: ChildProcess[] = []
+// export const shells: ChildProcess[] = []
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -102,7 +104,7 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
       devTools: false,
     },
-  })
+  });
 
   terminalWindow = new BrowserWindow({
     width: 800,
@@ -117,27 +119,28 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
       devTools: true,
     },
-    show: false
-  })
+    show: false,
+  });
 
-  splashScreen.loadURL(resolveHtmlPath("index.html", true, false));
+  splashScreen.loadURL(resolveHtmlPath('index.html', true, false));
   mainWindow.loadURL(resolveHtmlPath('index.html', false, false));
   terminalWindow.loadURL(resolveHtmlPath('index.html', false, true));
 
-  mainWindow && mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined');
-    }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      setTimeout(() => {
-        splashScreen && splashScreen.close();
-        mainWindow && mainWindow.show();
-        mainWindow && mainWindow.focus();
-      }, 1500)
-    }
-  });
+  mainWindow &&
+    mainWindow.on('ready-to-show', () => {
+      if (!mainWindow) {
+        throw new Error('"mainWindow" is not defined');
+      }
+      if (process.env.START_MINIMIZED) {
+        mainWindow.minimize();
+      } else {
+        setTimeout(() => {
+          splashScreen && splashScreen.hide();
+          mainWindow && mainWindow.show();
+          mainWindow && mainWindow.focus();
+        }, 1500);
+      }
+    });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -163,7 +166,7 @@ const createWindow = async () => {
 
 ipcMain.handle('import-project', async (_e, arg) => {
   // qui handlo l'import del progetto
-  fs.appendFile(app.getPath("documents") + "/projects.txt", arg[0], (err) => {
+  fs.appendFile(app.getPath('documents') + '/projects.txt', arg[0], (err) => {
     if (err) console.log(err);
   });
   return 'ok';
@@ -171,73 +174,78 @@ ipcMain.handle('import-project', async (_e, arg) => {
 
 ipcMain.handle('get-projects', async (e, _arg) => {
   e.preventDefault();
-  const projectFileDir = app.getPath("documents") + "/projects.txt";
+  const projectFileDir = app.getPath('documents') + '/projects.txt';
 
   if (fs.existsSync(projectFileDir))
     return fs.readFileSync(projectFileDir, 'utf8');
   else return '';
 });
 
-ipcMain.handle("remove-project", async (_, arg) => {
-  const projectFileDir = app.getPath("documents") + "/projects.txt";
+ipcMain.handle('remove-project', async (_, arg) => {
+  const projectFileDir = app.getPath('documents') + '/projects.txt';
   const composed = `${arg[0].dir}:::${arg[0].commands}`;
 
   if (fs.existsSync(projectFileDir)) {
-    const projects = fs.readFileSync(projectFileDir, 'utf8').split("---");
-    const newProjects = projects.filter((p) => p !== composed).join("---");
+    const projects = fs.readFileSync(projectFileDir, 'utf8').split('---');
+    const newProjects = projects.filter((p) => p !== composed).join('---');
     fs.writeFileSync(projectFileDir, newProjects);
-    return "done";
+    return 'done';
   }
 
-  return "Qualcosa è andato storto, in realtà non dovresti mai vedere questo messaggio, ma evidentemente hai cancellato il file projects.txt";
-})
+  return 'Qualcosa è andato storto, in realtà non dovresti mai vedere questo messaggio, ma evidentemente hai cancellato il file projects.txt';
+});
+
+let runningShells: { process: ChildProcess; projectName: string }[] = [];
 
 ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
-  
-  const splitter = process.platform === "win32" ? "\\" : "/";
-  const splittedDir = arg[0].dir.split(splitter);
-  splittedDir.splice(splittedDir.length - 1, 1);
 
-  const dir: string = splittedDir.join(splitter);
-  const projectName = dir.split(splitter)[dir.split(splitter).length - 1];
-  
-  const shell = exec(`cd ${dir} && ${arg[0].commands}`, (error, _stdout, stderr) => {
-    if (error) {
-      console.log(`error: ${error.message}`);
-    }
-    if (stderr) {
-      console.log(`stderr: ${stderr}`);
-    }
-  })
+  const { commands, dir, projectName } = getStartShellArguments(arg);
 
-  shell.stdout && shell.stdout.on('data', (data) => {
-    terminalWindow && terminalWindow.show()
-    terminalWindow?.webContents.send('shell-output', {
-      terminalData: data,
-      projectName
+  const shell = _shell
+    .cd(dir)
+    .exec(commands, { async: true }, (code, _stdout, stderr) => {
+      console.log('Exit code:', code);
+      console.log('Program stderr:', stderr);
     });
-  });
-
-  shells.push(shell);
   
+  mainWindow && mainWindow.webContents.send("shell-created", projectName)
+
+  shell.stdout &&
+    shell.stdout.on('data', (data) => {
+      mainWindow &&
+        mainWindow.webContents.send('shell-output', {
+          terminalData: data,
+          projectName,
+        });
+    });
+
+  runningShells.push({ process: shell, projectName });
+
   return {
-    message: "done",
+    message: 'done',
     projectName,
   };
 });
 
-ipcMain.handle("kill-shells", (_e, _arg) => {
-  // terminalWindow && terminalWindow.close()
-  shells.forEach((shell) => {
-    shell.kill()
-  });
-  return "done";
-})
+ipcMain.handle('kill-shell', (_e, arg) => {
+  const name = arg[0];
 
-ipcMain.handle("open-github", () => {
-  shell.openExternal("https://github.com/deltasolutionsita/topa3")
-})
+  const found = runningShells.findIndex((shell) => shell.projectName === name);
+  console.log(found)
+  if (found !== -1) {
+    runningShells[found].process.kill();
+  }
+
+  // deletes the killed shell from the array
+  runningShells = runningShells.filter((s) => s.projectName !== name);
+
+  return 'ok';
+});
+
+ipcMain.handle('open-github', () => {
+  shell.openExternal('https://github.com/deltasolutionsita/topa3');
+});
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
@@ -249,7 +257,12 @@ app.on('window-all-closed', () => {
 
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
+    const reduxDevToolsPath = path.join(
+      os.homedir(),
+      'Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/3.0.11_0'
+    );
+    await session.defaultSession.loadExtension(reduxDevToolsPath);
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the

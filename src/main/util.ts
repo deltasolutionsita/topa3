@@ -11,3 +11,18 @@ export function resolveHtmlPath(htmlFileName: string, splashShown: boolean, term
   }
   return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
 }
+
+export function getStartShellArguments(arg: any) {
+  const splitter = process.platform === "win32" ? "\\" : "/";
+  const splittedDir = arg[0].dir.split(splitter);
+  splittedDir.splice(splittedDir.length - 1, 1);
+
+  const dir: string = splittedDir.join(splitter);
+  const projectName = dir.split(splitter)[dir.split(splitter).length - 1];
+
+  return {
+    dir,
+    projectName,
+    commands: arg[0].commands,
+  };
+}

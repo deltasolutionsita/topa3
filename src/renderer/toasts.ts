@@ -1,8 +1,9 @@
 import { createStandaloneToast, UseToastOptions } from "@chakra-ui/react";
+import { ReactNode } from "react";
 
 const { toast } = createStandaloneToast()
 
-const toastGen = ({ title, status }: { title: string, status: UseToastOptions["status"] }) => {
+const toastGen = ({ title, status }: { title: string | ReactNode, status: UseToastOptions["status"] }) => {
   return toast({
     title,
     status,
@@ -38,5 +39,12 @@ export const fileNotValid = () => {
   return toastGen({
     title: "Il file non è valido",
     status: "error",
+  })
+}
+
+export const shellKilled = (name: string) => {
+  return toastGen({
+    title: `Shell ${name} terminata`,
+    status: "success",
   })
 }

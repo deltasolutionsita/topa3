@@ -1,60 +1,107 @@
-import { Box, Button, Divider, HStack, Spacer, Text } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
-import stripAnsi from 'strip-ansi';
+import {
+  Box,
+  Button,
+  HStack,
+  Spacer,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+} from '@chakra-ui/react';
+import { useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { TSContext } from 'renderer/providers/TerminalShown';
+import {
+  addNewTerminal,
+  addOutput,
+  deleteTerminal,
+  TerminalState,
+} from 'renderer/redux/terminalOutput';
+import { shellKilled } from 'renderer/toasts';
 
 function TerminalOutput() {
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
-  const [projectName, setProjectName] = useState('');
+  const [terminalShown, setTerminalShown] = useContext(TSContext);
+
+  const [selectedTerminal, setSelectedTerminal] = useState('');
+
+  const dispatch = useDispatch();
+  const state = useSelector((state) => state as TerminalState[]);
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('shell-output', (_out) => {
-      const out = _out as { terminalData: string; projectName: string };
+    if(state.length === 0) setTerminalShown(false);
 
-      setProjectName(out.projectName);
-      setTerminalOutput((prevTerminalOutput) => [
-        ...prevTerminalOutput,
-        stripAnsi(out.terminalData as string),
-      ]);
+    window.electron.ipcRenderer.on('shell-created', (_name) => {
+      const name = _name as string;
+      setSelectedTerminal(name);
+      dispatch(addNewTerminal({ name }));
+    });
+
+    window.electron.ipcRenderer.on('shell-output', (_out) => {
+      setTerminalShown(true);
+      
+      const { projectName, terminalData } = _out as {
+        terminalData: string;
+        projectName: string;
+      };
+
+      dispatch(addOutput({ projectName, terminalData }));
     });
   }, []);
 
   return (
-    <Box
-      bg={'black'}
-      p="2%"
-    >
+    <Box mt="5%" display={state.length > 0 || terminalShown ? 'block' : 'none'} bg={'black'} p="2%">
       <HStack>
-        <Text color="#EDEDED">
-          Terminal Output | last output: {projectName}
-        </Text>
+        <Text color="#EDEDED">Terminal Output</Text>
         <Spacer />
         <Button
           colorScheme={'red'}
           onClick={() => {
-            // console.log("sono triste, non so che fare...")
-            window.electron.ipcRenderer.invoke('kill-shells', []).then((r) => {
-              alert(r)
-            });
+            window.electron.ipcRenderer
+              .invoke('kill-shell', [selectedTerminal])
+              .then((r) => {
+                if (r === 'ok') {
+                  dispatch(deleteTerminal({ name: selectedTerminal }));
+                  shellKilled(selectedTerminal)
+                }
+              });
           }}
           variant="outline"
         >
-          Kill
+          Kill { selectedTerminal }
         </Button>
       </HStack>
-      <Divider mt="2%" />
-      <Box p="3%" mt="-1%">
-        {terminalOutput.map((outLine, i) => {
-          return (
-            <Text
-              fontFamily={'monospace'}
-              key={i}
-              color={outLine.includes('$') ? 'yellow.300' : '#EDEDED'}
-            >
-              {outLine}
-            </Text>
-          );
-        })}
-      </Box>
+      <Tabs>
+        <TabList>
+          {state &&
+            state.map(({ name }: TerminalState, i: number) => (
+              <Tab onClick={() => setSelectedTerminal(name)} key={i}>
+                {name}
+              </Tab>
+            ))}
+        </TabList>
+        <Box p="3%" mt="-1%">
+          <TabPanels>
+            {state &&
+              state.map((terminal: TerminalState, i: number) => {
+                return (
+                  <TabPanel key={i}>
+                    {terminal.out.map((output: string, i: number) => (
+                      <Text
+                        fontFamily={'monospace'}
+                        key={i}
+                        color={output.includes('$') ? 'yellow.300' : '#EDEDED'}
+                      >
+                        {output}
+                      </Text>
+                    ))}
+                  </TabPanel>
+                );
+              })}
+          </TabPanels>
+        </Box>
+      </Tabs>
     </Box>
   );
 }
