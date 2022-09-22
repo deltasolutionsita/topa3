@@ -26,3 +26,8 @@ export function getStartShellArguments(arg: any) {
     commands: arg[0].commands,
   };
 }
+
+export function getProjectsFileName() {
+  const slash = process.platform === "win32" ? "\\" : "/"
+  return slash + "projects.txt"
+}

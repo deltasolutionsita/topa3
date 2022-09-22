@@ -103,7 +103,7 @@ function ProjectDashboard() {
                               window.electron.ipcRenderer
                                 .invoke('start-shell', [project])
                                 .then((r) => {
-                                  if (r.message === 'done') {
+                                  if (r.message === 'ok') {
                                     commandsExecuted();
                                   } else alert(r.message);
                                 })

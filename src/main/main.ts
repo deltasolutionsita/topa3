@@ -13,7 +13,7 @@ import { app, BrowserWindow, shell, ipcMain, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { getStartShellArguments, resolveHtmlPath } from './util';
+import { getProjectsFileName, getStartShellArguments, resolveHtmlPath } from './util';
 import fs from 'fs';
 import { ChildProcess } from 'child_process';
 import { configureStore } from '@reduxjs/toolkit';
@@ -166,15 +166,15 @@ const createWindow = async () => {
 
 ipcMain.handle('import-project', async (_e, arg) => {
   // qui handlo l'import del progetto
-  fs.appendFile(app.getPath('documents') + '/projects.txt', arg[0], (err) => {
-    if (err) console.log(err);
+  fs.appendFile(app.getPath('documents') + getProjectsFileName(), arg[0], (err) => {
+    if (err) alert(err);
   });
   return 'ok';
 });
 
 ipcMain.handle('get-projects', async (e, _arg) => {
   e.preventDefault();
-  const projectFileDir = app.getPath('documents') + '/projects.txt';
+  const projectFileDir = app.getPath('documents') + getProjectsFileName();
 
   if (fs.existsSync(projectFileDir))
     return fs.readFileSync(projectFileDir, 'utf8');
@@ -182,7 +182,7 @@ ipcMain.handle('get-projects', async (e, _arg) => {
 });
 
 ipcMain.handle('remove-project', async (_, arg) => {
-  const projectFileDir = app.getPath('documents') + '/projects.txt';
+  const projectFileDir = app.getPath('documents') + getProjectsFileName();
   const composed = `${arg[0].dir}:::${arg[0].commands}`;
 
   if (fs.existsSync(projectFileDir)) {
@@ -209,9 +209,11 @@ ipcMain.handle('start-shell', async (e, arg) => {
       console.log('Program stderr:', stderr);
     });
   
-  mainWindow && mainWindow.webContents.send("shell-created", projectName)
+  mainWindow && mainWindow.webContents.send('shell-created', projectName);
 
-  shell.stdout &&
+  runningShells.push({ process: shell, projectName });
+
+  if (shell.stdout) {
     shell.stdout.on('data', (data) => {
       mainWindow &&
         mainWindow.webContents.send('shell-output', {
@@ -219,20 +221,33 @@ ipcMain.handle('start-shell', async (e, arg) => {
           projectName,
         });
     });
-
-  runningShells.push({ process: shell, projectName });
+    shell.stdout.on("close", () => console.log('Shell killata'));
+  }
 
   return {
-    message: 'done',
+    message: 'ok',
     projectName,
   };
 });
+
+// runningShells.forEach(({ process, projectName }) => {
+//   if(process.stdout) {
+//     process.stdout.on('data', (data) => {
+//       console.log("EXTERNAL PROCESS DATA", typeof data)
+//       mainWindow &&
+//         mainWindow.webContents.send('shell-output', {
+//           terminalData: data,
+//           projectName,
+//         });
+//     });
+//   }
+// })
 
 ipcMain.handle('kill-shell', (_e, arg) => {
   const name = arg[0];
 
   const found = runningShells.findIndex((shell) => shell.projectName === name);
-  console.log(found)
+
   if (found !== -1) {
     runningShells[found].process.kill();
   }
@@ -240,7 +255,10 @@ ipcMain.handle('kill-shell', (_e, arg) => {
   // deletes the killed shell from the array
   runningShells = runningShells.filter((s) => s.projectName !== name);
 
-  return 'ok';
+  return {
+    message: "ok",
+    length: runningShells.length
+  }
 });
 
 ipcMain.handle('open-github', () => {
