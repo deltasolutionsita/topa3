@@ -9,7 +9,7 @@ export function resolveHtmlPath(htmlFileName: string, splashShown: boolean) {
     url.pathname = htmlFileName;
     return url.href;
   }
-  return `file://${path.resolve(__dirname, '../renderer/', htmlFileName + splashShown ? '?splash=true' : '' )}`;
+  return `file://${path.resolve(__dirname, '../renderer/', `${htmlFileName}${splashShown ? "/?splash=true" : ""}`)}`;
 }
 
 export function getStartShellArguments(arg: any) {

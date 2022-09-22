@@ -149,6 +149,8 @@ export default class MenuBuilder {
         { label: 'Close', accelerator: 'Command+W', selector: 'performClose:' },
         { type: 'separator' },
         { label: 'Bring All to Front', selector: 'arrangeInFront:' },
+        { type: "separator" },
+        { label: "Toggle DevTools", accelerator: "Alt+Command+I", click: () => { this.mainWindow.webContents.toggleDevTools(); } }
       ],
     };
     const subMenuHelp: MenuItemConstructorOptions = {
