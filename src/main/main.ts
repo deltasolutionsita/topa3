@@ -30,7 +30,6 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 let splashScreen: BrowserWindow | null = null;
-let terminalWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -91,6 +90,7 @@ const createWindow = async () => {
   });
 
   splashScreen = new BrowserWindow({
+    show: false,
     width: 500,
     height: 300,
     transparent: false,
@@ -106,38 +106,30 @@ const createWindow = async () => {
     },
   });
 
-  terminalWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    transparent: false,
-    frame: true,
-    resizable: true,
-    webPreferences: {
-      sandbox: false,
-      preload: app.isPackaged
-        ? path.join(__dirname, 'preload.js')
-        : path.join(__dirname, '../../.erb/dll/preload.js'),
-      devTools: true,
-    },
-    show: false,
-  });
+  splashScreen.loadURL(resolveHtmlPath('index.html', true));
+  mainWindow.loadURL(resolveHtmlPath('index.html', false));
 
-  splashScreen.loadURL(resolveHtmlPath('index.html', true, false));
-  mainWindow.loadURL(resolveHtmlPath('index.html', false, false));
-  terminalWindow.loadURL(resolveHtmlPath('index.html', false, true));
+  splashScreen && splashScreen.on("ready-to-show", () => {
+    if(!splashScreen) throw new Error('"splashScreen" is not defined');
+    if(process.env.START_MINIMIZED) {
+      splashScreen.minimize()
+    } else {
+      splashScreen.show()
+    }
+  })
 
   mainWindow &&
     mainWindow.on('ready-to-show', () => {
-      if (!mainWindow) {
-        throw new Error('"mainWindow" is not defined');
-      }
+      if (!mainWindow) throw new Error('"mainWindow" is not defined');
       if (process.env.START_MINIMIZED) {
         mainWindow.minimize();
       } else {
         setTimeout(() => {
           splashScreen && splashScreen.hide();
-          mainWindow && mainWindow.show();
-          mainWindow && mainWindow.focus();
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+          }
         }, 1500);
       }
     });
