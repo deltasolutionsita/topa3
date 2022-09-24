@@ -109,14 +109,14 @@ const createWindow = async () => {
   splashScreen.loadURL(resolveHtmlPath('index.html', true));
   mainWindow.loadURL(resolveHtmlPath('index.html', false));
 
-  splashScreen && splashScreen.on("ready-to-show", () => {
-    if(!splashScreen) throw new Error('"splashScreen" is not defined');
-    if(process.env.START_MINIMIZED) {
-      splashScreen.minimize()
-    } else {
-      splashScreen.show()
-    }
-  })
+  // splashScreen && splashScreen.on("ready-to-show", () => {
+  //   if(!splashScreen) throw new Error('"splashScreen" is not defined');
+  //   if(process.env.START_MINIMIZED) {
+  //     splashScreen.minimize()
+  //   } else {
+  //     splashScreen.show()
+  //   }
+  // })
 
   mainWindow &&
     mainWindow.on('ready-to-show', () => {
@@ -125,7 +125,7 @@ const createWindow = async () => {
         mainWindow.minimize();
       } else {
         setTimeout(() => {
-          splashScreen && splashScreen.hide();
+          // splashScreen && splashScreen.hide();
           if (mainWindow) {
             mainWindow.show();
             mainWindow.focus();
@@ -270,7 +270,7 @@ app
   .then(async () => {
     const reduxDevToolsPath = path.join(
       os.homedir(),
-      'Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/3.0.11_0'
+      'Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/3.0.11_1'
     );
     await session.defaultSession.loadExtension(reduxDevToolsPath);
     createWindow();
