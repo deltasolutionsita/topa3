@@ -20,6 +20,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import reducer from './store/configureStore';
 import _shell from 'shelljs';
 import os from 'os';
+
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -193,10 +194,11 @@ ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
 
   const { commands, dir, projectName } = getStartShellArguments(arg);
-
+  const env = { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } };
+  
   const shell = _shell
     .cd(dir)
-    .exec(commands, { async: true }, (code, _stdout, stderr) => {
+    .exec(commands, { async: true, env }, (code, _stdout, stderr) => {
       console.log('Exit code:', code);
       console.log('Program stderr:', stderr);
     });
@@ -270,7 +272,7 @@ app
   .then(async () => {
     const reduxDevToolsPath = path.join(
       os.homedir(),
-      'Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/3.0.11_1'
+      'Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/3.0.11_0'
     );
     await session.defaultSession.loadExtension(reduxDevToolsPath);
     createWindow();
