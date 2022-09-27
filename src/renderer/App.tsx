@@ -74,8 +74,8 @@ const Main = () => {
       <>
         <TerminalShown>
           <Navbar />
-          <Box mt="-2%">
-            <Heading textAlign={'center'} mt="5%">
+          <Box mt="-2%" p="3%">
+            <Heading textAlign={'left'} mt="5%">
               I tuoi progetti
             </Heading>
             <ProjectDashboard />

@@ -30,7 +30,6 @@ function ProjectDashboard() {
   );
   const [isLaunchUIShown, setIsLaunchUIShown] = useState(false);
   const [hoveredItem, setHoveredItem] = useState({ dir: '', commands: '' });
-  // marcial & banega (?)
   const { isOpen, onClose, onOpen } = useDisclosure();
 
   useEffect(() => {
@@ -52,7 +51,7 @@ function ProjectDashboard() {
 
   return (
     <>
-      <Box mt="3%">
+      <Box p="2%" mt="3%">
         <SimpleGrid columns={3} placeItems="center">
           {projects.map((project, i) => {
             const parsedDir = getWorkspaceFolderName(project.dir);
@@ -85,13 +84,10 @@ function ProjectDashboard() {
                   key={i}
                   borderWidth={'2px'}
                   p="8%"
-                  // width={'200px'}
-                  // height={'125px'}
                   alignItems="center"
                   justifyContent={'center'}
                 >
                   {
-                    // display launch ui if hovered item is the same as the current item shown
                     displayLaunchUIClause ? (
                       <>
                         <HStack spacing={'5'}>
