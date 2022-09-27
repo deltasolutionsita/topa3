@@ -13,7 +13,11 @@ import { app, BrowserWindow, shell, ipcMain, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { getProjectsFileName, getStartShellArguments, resolveHtmlPath } from './util';
+import {
+  getProjectsFileName,
+  getStartShellArguments,
+  resolveHtmlPath,
+} from './util';
 import fs from 'fs';
 import { ChildProcess } from 'child_process';
 import { configureStore } from '@reduxjs/toolkit';
@@ -103,21 +107,20 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
-      devTools: true,
     },
   });
 
   splashScreen.loadURL(resolveHtmlPath('index.html', true));
   mainWindow.loadURL(resolveHtmlPath('index.html', false));
 
-  // splashScreen && splashScreen.on("ready-to-show", () => {
-  //   if(!splashScreen) throw new Error('"splashScreen" is not defined');
-  //   if(process.env.START_MINIMIZED) {
-  //     splashScreen.minimize()
-  //   } else {
-  //     splashScreen.show()
-  //   }
-  // })
+  splashScreen && splashScreen.on("ready-to-show", () => {
+    if(!splashScreen) throw new Error('"splashScreen" is not defined');
+    if(process.env.START_MINIMIZED) {
+      splashScreen.minimize()
+    } else {
+      splashScreen.show()
+    }
+  })
 
   mainWindow &&
     mainWindow.on('ready-to-show', () => {
@@ -126,7 +129,7 @@ const createWindow = async () => {
         mainWindow.minimize();
       } else {
         setTimeout(() => {
-          // splashScreen && splashScreen.hide();
+          splashScreen && splashScreen.hide();
           if (mainWindow) {
             mainWindow.show();
             mainWindow.focus();
@@ -159,9 +162,13 @@ const createWindow = async () => {
 
 ipcMain.handle('import-project', async (_e, arg) => {
   // qui handlo l'import del progetto
-  fs.appendFile(app.getPath('documents') + getProjectsFileName(), arg[0], (err) => {
-    if (err) alert(err);
-  });
+  fs.appendFile(
+    app.getPath('documents') + getProjectsFileName(),
+    arg[0],
+    (err) => {
+      if (err) alert(err);
+    }
+  );
   return 'ok';
 });
 
@@ -194,15 +201,19 @@ ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
 
   const { commands, dir, projectName } = getStartShellArguments(arg);
-  const env = { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } };
   
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
   const shell = _shell
     .cd(dir)
     .exec(commands, { async: true, env }, (code, _stdout, stderr) => {
       console.log('Exit code:', code);
       console.log('Program stderr:', stderr);
     });
-  
+
   mainWindow && mainWindow.webContents.send('shell-created', projectName);
 
   runningShells.push({ process: shell, projectName });
@@ -215,7 +226,7 @@ ipcMain.handle('start-shell', async (e, arg) => {
           projectName,
         });
     });
-    shell.stdout.on("close", () => console.log('Shell killata'));
+    shell.stdout.on('close', () => console.log('Shell killata'));
   }
 
   return {
@@ -250,9 +261,9 @@ ipcMain.handle('kill-shell', (_e, arg) => {
   runningShells = runningShells.filter((s) => s.projectName !== name);
 
   return {
-    message: "ok",
-    length: runningShells.length
-  }
+    message: 'ok',
+    length: runningShells.length,
+  };
 });
 
 ipcMain.handle('open-github', () => {
