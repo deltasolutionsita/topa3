@@ -25,6 +25,7 @@ import {
   addOutput,
   deleteTerminal,
   TerminalState,
+  voidState,
 } from 'renderer/redux/terminalOutput';
 import { shellKilled } from 'renderer/toasts';
 
@@ -97,6 +98,7 @@ function TerminalOutput() {
                         dispatch(deleteTerminal({ name: selectedTerminal }));
                         shellKilled(selectedTerminal);
                         if (length === 0) {
+                          dispatch(voidState())
                           setTerminalShown(false)
                           setDrawerShown(false)
                         } else if (length !== 0) {

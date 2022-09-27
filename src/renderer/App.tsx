@@ -15,6 +15,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import DragBox from './components/DragBox';
+import GitterProvider from './components/gitter/GitterProvider';
 import Navbar from './components/Navbar';
 import ProjectDashboard from './components/ProjectDashboard';
 import TerminalOutput from './components/TerminalOutput';
@@ -73,14 +74,16 @@ const Main = () => {
     return (
       <>
         <TerminalShown>
-          <Navbar />
-          <Box mt="-2%">
-            <Heading textAlign={'left'} mt="5%" ml="5%">
-              I tuoi progetti
-            </Heading>
-            <ProjectDashboard />
-            <TerminalOutput />
-          </Box>
+          <GitterProvider>
+            <Navbar />
+            <Box mt="-2%">
+              <Heading textAlign={'left'} mt="5%" ml="5%">
+                I tuoi progetti
+              </Heading>
+              <ProjectDashboard />
+              <TerminalOutput />
+            </Box>
+          </GitterProvider>
         </TerminalShown>
       </>
     );
@@ -95,7 +98,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/splash" element={<SplashScreen />} />
-            <Route path="/terminal" element={<TerminalOutput />} />
           </Routes>
         </Router>
       </ChakraProvider>

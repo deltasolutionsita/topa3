@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { AiOutlinePlus } from 'react-icons/ai';
 import DragBox from './DragBox';
-import Gitter from './Gitter';
+import Gitter from './gitter/Gitter';
 
 const NavLink = ({ children }: { children: ReactNode }) => (
   <Link

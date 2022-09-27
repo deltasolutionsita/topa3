@@ -10,6 +10,8 @@ import {
 } from '@chakra-ui/react';
 import { commandsExecuted } from 'renderer/toasts';
 import { FiSettings } from "react-icons/fi";
+import { useContext } from 'react';
+import { GitterContext } from './gitter/GitterProvider';
 
 interface ProjectCardProps {
   project: { dir: string; commands: string };
@@ -18,6 +20,8 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project, parsedDir, openModal }: ProjectCardProps) {
+  const [gitterElements, setGitterElements] = useContext(GitterContext)
+
   return (
     <Center py={6}>
       <Box
@@ -73,6 +77,14 @@ export default function ProjectCard({ project, parsedDir, openModal }: ProjectCa
                   .then((r) => {
                     if (r.message === 'ok') {
                       commandsExecuted();
+                      setGitterElements([
+                        ...gitterElements,
+                        {
+                          changedFiles: [],
+                          parsedDir,  
+                          project
+                        }
+                      ])
                     } else alert(r.message);
                   })
                   .catch((e) => alert(e));
