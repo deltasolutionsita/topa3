@@ -3,7 +3,6 @@ import {
   Button,
   Code,
   Divider,
-  Flex,
   HStack,
   Modal,
   ModalBody,
@@ -19,17 +18,15 @@ import {
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { getWorkspaceFolderName } from './DragBox';
-import { FiSettings } from 'react-icons/fi';
-import { commandsExecuted, projectDeleted } from 'renderer/toasts';
+import { projectDeleted } from 'renderer/toasts';
 import { sleep } from './consts';
-import { motion } from 'framer-motion';
+import ProjectCard from './ProjectCard';
 
 function ProjectDashboard() {
   const [projects, setProjects] = useState<{ dir: string; commands: string }[]>(
     []
   );
-  const [isLaunchUIShown, setIsLaunchUIShown] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState({ dir: '', commands: '' });
+  const [selectedItem, setSelectedItem] = useState({ dir: '', commands: '' });
   const { isOpen, onClose, onOpen } = useDisclosure();
 
   useEffect(() => {
@@ -57,68 +54,20 @@ function ProjectDashboard() {
             const parsedDir = getWorkspaceFolderName(project.dir);
             if (i === projects.length - 1) return;
 
-            const displayLaunchUIClause =
-              isLaunchUIShown &&
-              parsedDir === getWorkspaceFolderName(hoveredItem.dir);
+            const options = {
+              parsedDir,
+              project,
+              openModal: () => {
+                setSelectedItem(project);
+                onOpen();
+              }
+            }
 
             return (
-              <motion.div
-                style={{
-                  width: displayLaunchUIClause ? '75%' : '50%',
-                }}
+              <ProjectCard
                 key={i}
-                whileHover={{
-                  scale: 1.1,
-                }}
-              >
-                <Flex
-                  rounded="lg"
-                  onMouseEnter={() => {
-                    setHoveredItem({
-                      commands: project.commands,
-                      dir: project.dir,
-                    });
-                    setIsLaunchUIShown(true);
-                  }}
-                  onMouseLeave={() => setIsLaunchUIShown(false)}
-                  key={i}
-                  borderWidth={'2px'}
-                  p="8%"
-                  alignItems="center"
-                  justifyContent={'center'}
-                >
-                  {
-                    displayLaunchUIClause ? (
-                      <>
-                        <HStack spacing={'5'}>
-                          <Button
-                            colorScheme="teal"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              window.electron.ipcRenderer
-                                .invoke('start-shell', [project])
-                                .then((r) => {
-                                  if (r.message === 'ok') {
-                                    commandsExecuted();
-                                  } else alert(r.message);
-                                })
-                                .catch((e) => alert(e));
-                            }}
-                          >
-                            Avvia {parsedDir}
-                          </Button>
-                          <Button onClick={onOpen}>
-                            <FiSettings />
-                          </Button>
-                        </HStack>
-                      </>
-                    ) : (
-                      <h1>{parsedDir}</h1>
-                    )
-                  }
-                </Flex>
-              </motion.div>
+                {...options}
+              />
             );
           })}
         </SimpleGrid>
@@ -126,23 +75,23 @@ function ProjectDashboard() {
       <Modal motionPreset="slideInBottom" isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{getWorkspaceFolderName(hoveredItem.dir)}</ModalHeader>
+          <ModalHeader>{getWorkspaceFolderName(selectedItem.dir)}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack mb="5%" divider={<Divider />}>
               <HStack maxW={'300px'}>
                 <Text>Directory: </Text>
-                <Code maxW={'250px'}>{hoveredItem.dir}</Code>
+                <Code maxW={'250px'}>{selectedItem.dir}</Code>
               </HStack>
               <HStack maxW={'300px'}>
                 <Text>Comandi: </Text>
-                <Code maxW={'250px'}>{hoveredItem.commands}</Code>
+                <Code maxW={'250px'}>{selectedItem.commands}</Code>
               </HStack>
               <Button
                 colorScheme={'red'}
                 onClick={() => {
                   window.electron.ipcRenderer
-                    .invoke('remove-project', [hoveredItem])
+                    .invoke('remove-project', [selectedItem])
                     .then(async (r) => {
                       if (r === 'done') {
                         projectDeleted();
