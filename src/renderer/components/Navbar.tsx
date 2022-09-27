@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { AiOutlinePlus } from 'react-icons/ai';
 import DragBox from './DragBox';
+import Gitter from './Gitter';
 
 const NavLink = ({ children }: { children: ReactNode }) => (
   <Link
@@ -38,7 +39,8 @@ const NavLink = ({ children }: { children: ReactNode }) => (
 export default function Navbar() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isGitterOpen, setIsGitterOpen] = useState(false);
+  
   return (
     <>
       <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
@@ -55,7 +57,7 @@ export default function Navbar() {
               spacing={4}
               display={{ base: 'none', md: 'flex' }}
             >
-              <NavLink>1</NavLink>
+              <Button onClick={() => setIsGitterOpen(true)}>Gitter</Button>
               <NavLink>2</NavLink>
               <NavLink>3</NavLink>
             </HStack>
@@ -91,6 +93,7 @@ export default function Navbar() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <Gitter isOpen={isGitterOpen} onClose={() => setIsGitterOpen(false)} />
     </>
   );
 }
