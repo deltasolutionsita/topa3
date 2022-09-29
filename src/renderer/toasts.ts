@@ -48,3 +48,10 @@ export const shellKilled = (name: string) => {
     status: "success",
   })
 }
+
+export const committed = (name: string) => {
+  return toastGen({
+    title: `Commit del progetto ${name} effettuato`,
+    status: "success",
+  })
+}

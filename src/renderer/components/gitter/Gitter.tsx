@@ -7,12 +7,16 @@ import {
   DrawerBody,
   DrawerFooter,
   Button,
-  Input,
   Box,
   Text,
   Heading,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
 } from '@chakra-ui/react';
 import { useContext } from 'react';
+import GitterActions from './GitterActions';
 import { GitterContext } from './GitterProvider';
 
 function Gitter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -26,30 +30,37 @@ function Gitter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
         <DrawerHeader>Gitter</DrawerHeader>
 
         <DrawerBody>
-          <Input colorScheme={'teal'} placeholder="Commit message..." />
           <Box mt="5%">
-            {gitterElements.map((gitterElement, i) => (
-              <Box
-                mt={i !== 0 ? '5%' : '0%'}
-                key={i}
-                borderWidth="2px"
-                rounded={'lg'}
-                p="5%"
-              >
-                <Heading fontSize={'lg'}>{gitterElement.parsedDir}</Heading>
-                <Box p="3%" mt="2%">
-                  {gitterElement.changedFiles.length > 0 ? (
-                    gitterElement.changedFiles.map((file, i) => {
-                      return <Text key={i}>{file.name}</Text>;
-                    })
-                  ) : (
-                    <Text opacity={0.7} fontStyle="italic">
-                      Nessun file modificato...
-                    </Text>
-                  )}
-                </Box>
+            {gitterElements.length > 0 ? (
+              <Box p="5%" borderWidth={'1px'} rounded="2xl">
+                <Text mb="5%" opacity={0.6}>
+                  Progetti aperti:{' '}
+                </Text>
+                <Tabs colorScheme={'teal'} variant="line">
+                  <TabList>
+                    {gitterElements.map((gitterElement, i) => (
+                      <Tab key={i}>
+                        <Heading fontSize={'md'}>
+                          {gitterElement.parsedDir}
+                        </Heading>
+                      </Tab>
+                    ))}
+                  </TabList>
+                  <TabPanels>
+                    {gitterElements.map((gitterElement, i) => (
+                      <GitterActions
+                        key={i}
+                        project={gitterElement}
+                      />
+                    ))}
+                  </TabPanels>
+                </Tabs>
               </Box>
-            ))}
+            ) : (
+              <Text fontStyle={'italic'} opacity={0.7}>
+                Nessun progetto aperto...
+              </Text>
+            )}
           </Box>
         </DrawerBody>
 

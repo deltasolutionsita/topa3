@@ -7,7 +7,7 @@ import { sleep } from './consts';
 
 export function getWorkspaceFolderName(path: string) {
   let r;
-  if(path.includes('\\')) {
+  if (path.includes('\\')) {
     r = path.split('\\');
   } else {
     r = path.split('/');

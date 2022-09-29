@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import {
+  getProjectFolderPath,
   getProjectsFileName,
   getStartShellArguments,
   resolveHtmlPath,
@@ -51,8 +52,6 @@ if (isDebug) {
 export const store = configureStore({
   reducer,
 });
-
-// export const shells: ChildProcess[] = []
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -107,21 +106,22 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
-      devTools: false
+      devTools: false,
     },
   });
 
   splashScreen.loadURL(resolveHtmlPath('index.html', true));
   mainWindow.loadURL(resolveHtmlPath('index.html', false));
 
-  splashScreen && splashScreen.on("ready-to-show", () => {
-    if(!splashScreen) throw new Error('"splashScreen" is not defined');
-    if(process.env.START_MINIMIZED) {
-      splashScreen.minimize()
-    } else {
-      splashScreen.show()
-    }
-  })
+  splashScreen &&
+    splashScreen.on('ready-to-show', () => {
+      if (!splashScreen) throw new Error('"splashScreen" is not defined');
+      if (process.env.START_MINIMIZED) {
+        splashScreen.minimize();
+      } else {
+        splashScreen.show();
+      }
+    });
 
   mainWindow &&
     mainWindow.on('ready-to-show', () => {
@@ -157,7 +157,7 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
-/** 
+/**
  * Add event listeners...
  */
 
@@ -201,7 +201,7 @@ ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
 
   const { commands, dir, projectName } = getStartShellArguments(arg);
-  
+
   const isWindows = process.platform === 'win32';
   const env = !isWindows
     ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
@@ -235,19 +235,6 @@ ipcMain.handle('start-shell', async (e, arg) => {
   };
 });
 
-// runningShells.forEach(({ process, projectName }) => {
-//   if(process.stdout) {
-//     process.stdout.on('data', (data) => {
-//       console.log("EXTERNAL PROCESS DATA", typeof data)
-//       mainWindow &&
-//         mainWindow.webContents.send('shell-output', {
-//           terminalData: data,
-//           projectName,
-//         });
-//     });
-//   }
-// })
-
 ipcMain.handle('kill-shell', (_e, arg) => {
   const name = arg[0];
 
@@ -268,6 +255,42 @@ ipcMain.handle('kill-shell', (_e, arg) => {
 
 ipcMain.handle('open-github', () => {
   shell.openExternal('https://github.com/deltasolutionsita/topa3');
+});
+
+ipcMain.handle('git-commit', (_e, arg) => {
+  const commitMessage = arg[0].commitMessage;
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell
+    .cd(getProjectFolderPath(dir))
+    .exec(
+      `git add . & git commit -am "${commitMessage}"`,
+      { async: true, env },
+      (code, _, stderr) => {
+        console.log('Exit code:', code);
+        console.log('Program stderr:', stderr);
+      }
+    );
+
+  shell.exitCode && shell.exitCode === 0 && shell.kill();
+  shell.stdout &&
+    shell.stdout.on('data', (out) => {
+      mainWindow &&
+        mainWindow.webContents.send('git-commit-output', {
+          out,
+          name,
+        });
+    });
+
+  return {
+    message: 'ok',
+    name,
+  };
 });
 
 app.on('window-all-closed', () => {
