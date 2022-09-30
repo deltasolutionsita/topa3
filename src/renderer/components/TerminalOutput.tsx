@@ -27,7 +27,8 @@ import {
 } from 'renderer/redux/terminalOutput';
 
 function TerminalOutput() {
-  const [terminalShown, setTerminalShown, drawerShown, setDrawerShown] = useContext(TSContext);
+  const [terminalShown, setTerminalShown, drawerShown, setDrawerShown] =
+    useContext(TSContext);
 
   const dispatch = useDispatch();
   const shells = useSelector((shells) => shells as TerminalState[]);
@@ -63,7 +64,10 @@ function TerminalOutput() {
       w="100%"
     >
       <HStack>
-        <Text color="#EDEDED">Output del Terminale Disponibile ({shells.length} shell apert{shells.length === 1 ? "a" : "e"})</Text>
+        <Text color="#EDEDED">
+          Output del Terminale Disponibile ({shells.length} shell apert
+          {shells.length === 1 ? 'a' : 'e'})
+        </Text>
         <Spacer />
         <Button variant="outline" onClick={() => setDrawerShown(true)}>
           <Text>Mostra Output</Text>
@@ -84,33 +88,29 @@ function TerminalOutput() {
           <DrawerBody>
             <Tabs colorScheme={'teal'}>
               <TabList>
-                {shells &&
-                  shells.map(({ name }: TerminalState, i: number) => (
-                    <Tab key={i}>
-                      {name}
-                    </Tab>
-                  ))}
+                {shells.map(({ name }: TerminalState, i: number) => (
+                  <Tab key={i}>{name}</Tab>
+                ))}
               </TabList>
               <Box p="3%">
                 <TabPanels>
-                  {shells &&
-                    shells.map((terminal: TerminalState, i: number) => {
-                      return (
-                        <TabPanel key={i}>
-                          {terminal.out.map((output: string, i: number) => (
-                            <Text
-                              fontFamily={'monospace'}
-                              key={i}
-                              color={
-                                output.includes('$') ? 'yellow.300' : '#EDEDED'
-                              }
-                            >
-                              {output}
-                            </Text>
-                          ))}
-                        </TabPanel>
-                      );
-                    })}
+                  {shells.map((terminal: TerminalState, i: number) => {
+                    return (
+                      <TabPanel key={i}>
+                        {terminal.out.map((output: string, i: number) => (
+                          <Text
+                            fontFamily={'monospace'}
+                            key={i}
+                            color={
+                              output.includes('$') ? 'yellow.300' : '#EDEDED'
+                            }
+                          >
+                            {output}
+                          </Text>
+                        ))}
+                      </TabPanel>
+                    );
+                  })}
                 </TabPanels>
               </Box>
             </Tabs>

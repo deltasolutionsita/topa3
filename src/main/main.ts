@@ -269,23 +269,26 @@ ipcMain.handle('git-commit', (_e, arg) => {
   const shell = _shell
     .cd(getProjectFolderPath(dir))
     .exec(
-      `git add . & git commit -am "${commitMessage}"`,
+      `rm -rf ./git/index.lock & git add . & git commit -am "${commitMessage}"`,
       { async: true, env },
       (code, _, stderr) => {
         console.log('Exit code:', code);
-        console.log('Program stderr:', stderr);
+        mainWindow && mainWindow.webContents.send("git-commit-error", {
+          error: stderr,
+          name
+        })
       }
     );
 
-  shell.exitCode && shell.exitCode === 0 && shell.kill();
-  shell.stdout &&
-    shell.stdout.on('data', (out) => {
-      mainWindow &&
-        mainWindow.webContents.send('git-commit-output', {
-          out,
-          name,
-        });
-    });
+  if(shell.stdout) {
+      shell.stdout.on('data', (out) => {
+        mainWindow &&
+          mainWindow.webContents.send('git-commit-output', {
+            out,
+            name,
+          });
+      });
+  }
 
   return {
     message: 'ok',

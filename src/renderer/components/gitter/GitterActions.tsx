@@ -1,9 +1,9 @@
-import { Box, Button, Input, Text } from '@chakra-ui/react';
+import { Box, Button, Input } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { AiOutlineCheckCircle } from 'react-icons/ai';
 import { useDispatch } from 'react-redux';
 import { addNewTerminal, addOutput } from 'renderer/redux/terminalOutput';
-import { committed } from 'renderer/toasts';
+import { committed, verboseError } from 'renderer/toasts';
 import { GitterElement } from './GitterProvider';
 
 interface GitterActionsProps {
@@ -12,19 +12,26 @@ interface GitterActionsProps {
 
 function GitterActions({ project }: GitterActionsProps) {
   const [commitMessage, setCommitMessage] = useState('');
-  const [outputAvailable, setOutputAvailable] = useState(false)
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    window.electron.ipcRenderer.on("git-commit-output", (data) => {
-      const { out, name } = data as { out: string, name: string }
+    window.electron.ipcRenderer.on('git-commit-output', (data) => {
+      const { out, name } = data as { out: string; name: string };
 
-      dispatch(addOutput({
-        projectName: name + " (git)",
-        terminalData: out
-      }))
-    })
-  }, [])
+      dispatch(
+        addOutput({
+          projectName: name + ' (git)',
+          terminalData: out,
+        })
+      );
+    });
+
+    window.electron.ipcRenderer.on('git-commit-error', (data) => {
+      const { error } = data as { error: string; name: string };
+
+      verboseError(error)
+    });
+  }, []);
   return (
     <>
       <Box p="10%">
@@ -41,8 +48,7 @@ function GitterActions({ project }: GitterActionsProps) {
           rounded={'2xl'}
           leftIcon={<AiOutlineCheckCircle />}
           onClick={() => {
-            dispatch(addNewTerminal({ name: project.parsedDir + " (git)" }))
-            setOutputAvailable(true)
+            dispatch(addNewTerminal({ name: project.parsedDir + ' (git)' }));
             window.electron.ipcRenderer
               .invoke('git-commit', [
                 {
@@ -57,12 +63,12 @@ function GitterActions({ project }: GitterActionsProps) {
                 if (message === 'ok') {
                   committed(name);
                 }
-              });
+              })
+              .catch(() => console.error("errore dal catch di git-commit"))
           }}
         >
           Commit
         </Button>
-        {outputAvailable && <Text mt="8%" opacity={0.5} fontSize="sm" textAlign={"center"}>Output git disponibile come nuova shell del terminale</Text>}
       </Box>
     </>
   );
