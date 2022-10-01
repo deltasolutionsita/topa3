@@ -209,8 +209,7 @@ ipcMain.handle('start-shell', async (e, arg) => {
 
   const shell = _shell
     .cd(dir)
-    .exec(commands, { async: true, env }, (code, _stdout, stderr) => {
-      console.log('Exit code:', code);
+    .exec(commands, { async: true, env }, (_, __, stderr) => {
       console.log('Program stderr:', stderr);
     });
 
@@ -269,25 +268,36 @@ ipcMain.handle('git-commit', (_e, arg) => {
   const shell = _shell
     .cd(getProjectFolderPath(dir))
     .exec(
-      `rm -rf ./git/index.lock & git add . & git commit -am "${commitMessage}"`,
+      `rm -rf ./git/index.lock & git commit -am "${commitMessage}"`,
       { async: true, env },
       (code, _, stderr) => {
-        console.log('Exit code:', code);
-        mainWindow && mainWindow.webContents.send("git-commit-error", {
-          error: stderr,
-          name
-        })
+        if (code === 0)
+          mainWindow &&
+            mainWindow.webContents.send('git-can-push', {
+              canPush: true,
+            });
+        if (stderr !== '') {
+          mainWindow &&
+            mainWindow.webContents.send('git-can-push', {
+              canPush: false,
+            });
+          mainWindow &&
+            mainWindow.webContents.send('git-commit-error', {
+              error: stderr,
+              name,
+            });
+        }
       }
     );
 
-  if(shell.stdout) {
-      shell.stdout.on('data', (out) => {
-        mainWindow &&
-          mainWindow.webContents.send('git-commit-output', {
-            out,
-            name,
-          });
-      });
+  if (shell.stdout) {
+    shell.stdout.on('data', (out) => {
+      mainWindow &&
+        mainWindow.webContents.send('git-commit-output', {
+          out,
+          name,
+        });
+    });
   }
 
   return {
@@ -295,6 +305,81 @@ ipcMain.handle('git-commit', (_e, arg) => {
     name,
   };
 });
+
+ipcMain.handle('git-push', (_e, arg) => {
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell
+    .cd(getProjectFolderPath(dir))
+    .exec(`git push`, { async: true, env }, (code, _, stderr) => {
+      if (code === 0 && mainWindow) {
+        mainWindow.webContents.send('git-push-success', {
+          success: true,
+        });
+      }
+      mainWindow &&
+        mainWindow.webContents.send('git-push-output', {
+          name,
+          out: _,
+        });
+      stderr !== '' &&
+        mainWindow?.webContents.send('git-push-output', {
+          out: stderr,
+          name,
+        });
+    });
+
+  if (shell.stdout) {
+    shell.stdout.on('data', (chunk) => {
+      mainWindow &&
+        mainWindow.webContents.send('git-push-output', {
+          name,
+          out: chunk,
+        });
+    });
+  }
+});
+
+ipcMain.handle("git-fp", (_e, arg) => {
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell.cd(getProjectFolderPath(dir))
+    .exec("git fetch & git pull", { env }, (_, out, error) => {
+      console.log(`err: ${error}`)
+      console.log(`code: ${_}`)
+      
+      mainWindow?.webContents.send("git-fp-out", {
+        out,
+        name
+      })
+      
+      error !== "" && mainWindow?.webContents.send("git-fp-error", {
+        error
+      })
+    })
+
+  shell.stdout?.on("data", (chunk) => {
+    mainWindow?.webContents.send("git-fp-out", {
+      out: chunk,
+      name
+    })
+  })
+
+  return {
+    message: "ok",
+    name
+  }
+})
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

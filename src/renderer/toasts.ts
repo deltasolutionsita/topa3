@@ -62,6 +62,13 @@ export const committed = (name: string) => {
   });
 };
 
+export const pushed = () => {
+  return toastGen({
+    title: `Push eseguito con successo`,
+    status: 'success',
+  });
+};
+
 export const verboseError = (error: string) => {
   return toast({
     title: 'Errore',

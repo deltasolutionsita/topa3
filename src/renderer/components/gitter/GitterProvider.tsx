@@ -17,12 +17,12 @@ export const GitterContext = createContext<
 >([[], () => {}]);
 
 const GitterProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [gitterElements, setGitterElements] = React.useState<GitterElement[]>(
+  const [openedProjects, setOpenedProjects] = React.useState<GitterElement[]>(
     []
   );
 
   return (
-    <GitterContext.Provider value={[gitterElements, setGitterElements]}>
+    <GitterContext.Provider value={[openedProjects, setOpenedProjects]}>
       {children}
     </GitterContext.Provider>
   );

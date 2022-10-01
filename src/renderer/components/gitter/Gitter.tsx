@@ -23,7 +23,7 @@ import GitterActions from './GitterActions';
 import { GitterContext } from './GitterProvider';
 
 function Gitter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [gitterElements] = useContext(GitterContext);
+  const [openedProjects] = useContext(GitterContext);
   const allShells = useSelector((shells) => shells as TerminalState[]);
   const gitShells = allShells.filter((shell) => shell.name.includes('(git)'));
 
@@ -36,25 +36,25 @@ function Gitter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
 
         <DrawerBody>
           <Box mt="5%">
-            {gitterElements.length > 0 ? (
+            {openedProjects.length > 0 ? (
               <>
                 <Box p="5%" borderWidth={'1px'} rounded="2xl">
-                  <Text textAlign={"center"} mb="5%" opacity={0.6}>
+                  <Text textAlign={'center'} mb="5%" opacity={0.6}>
                     Progetti aperti:{' '}
                   </Text>
                   <Tabs isFitted colorScheme={'teal'} variant="line">
                     <TabList>
-                      {gitterElements.map((gitterElement, i) => (
+                      {openedProjects.map((openedProject, i) => (
                         <Tab key={i}>
                           <Heading fontSize={'md'}>
-                            {gitterElement.parsedDir}
+                            {openedProject.parsedDir}
                           </Heading>
                         </Tab>
                       ))}
                     </TabList>
                     <TabPanels>
-                      {gitterElements.map((gitterElement, i) => (
-                        <GitterActions key={i} project={gitterElement} />
+                      {openedProjects.map((openedProject, i) => (
+                        <GitterActions key={i} project={openedProject} />
                       ))}
                     </TabPanels>
                   </Tabs>
@@ -71,19 +71,27 @@ function Gitter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
                         {gitShells.map((terminal: TerminalState, i: number) => {
                           return (
                             <TabPanel key={i}>
-                              {terminal.out.map((output: string, i: number) => (
-                                <Text
-                                  fontFamily={'monospace'}
-                                  key={i}
-                                  color={
-                                    output.includes('$')
-                                      ? 'yellow.300'
-                                      : '#EDEDED'
-                                  }
-                                >
-                                  {output}
+                              {terminal.out.length > 0 ? (
+                                terminal.out.map(
+                                  (output: string, i: number) => (
+                                    <Text
+                                      fontFamily={'monospace'}
+                                      key={i}
+                                      color={
+                                        output.includes('$')
+                                          ? 'yellow.300'
+                                          : '#EDEDED'
+                                      }
+                                    >
+                                      {output}
+                                    </Text>
+                                  )
+                                )
+                              ) : (
+                                <Text mx="10%" opacity={0.5}>
+                                  Nessun output...😴
                                 </Text>
-                              ))}
+                              )}
                             </TabPanel>
                           );
                         })}

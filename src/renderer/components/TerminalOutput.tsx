@@ -97,17 +97,23 @@ function TerminalOutput() {
                   {shells.map((terminal: TerminalState, i: number) => {
                     return (
                       <TabPanel key={i}>
-                        {terminal.out.map((output: string, i: number) => (
-                          <Text
-                            fontFamily={'monospace'}
-                            key={i}
-                            color={
-                              output.includes('$') ? 'yellow.300' : '#EDEDED'
-                            }
-                          >
-                            {output}
+                        {terminal.out.length > 0 ? (
+                          terminal.out.map((output: string, i: number) => (
+                            <Text
+                              fontFamily={'monospace'}
+                              key={i}
+                              color={
+                                output.includes('$') ? 'yellow.300' : '#EDEDED'
+                              }
+                            >
+                              {output}
+                            </Text>
+                          ))
+                        ) : (
+                          <Text mx="10%" opacity={0.5}>
+                            Nessun output...😴
                           </Text>
-                        ))}
+                        )}
                       </TabPanel>
                     );
                   })}

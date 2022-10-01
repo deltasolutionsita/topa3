@@ -27,7 +27,7 @@ export default function ProjectCard({
   parsedDir,
   openModal,
 }: ProjectCardProps) {
-  const [gitterElements, setGitterElements] = useContext(GitterContext);
+  const [openedProjects, setOpenedProjects] = useContext(GitterContext);
   const [, setTerminalShown, , setDrawerShown] = useContext(TSContext);
   const [isShellStarted, setIsShellStarted] = useState(false);
   const dispatch = useDispatch();
@@ -36,6 +36,7 @@ export default function ProjectCard({
     <Center py={6}>
       <Box
         maxW={'330px'}
+        minW={"250px"}
         w={'full'}
         bg={useColorModeValue('white', 'gray.800')}
         boxShadow={'2xl'}
@@ -89,8 +90,8 @@ export default function ProjectCard({
                         if (r.message === 'ok') {
                           commandsExecuted();
                           setIsShellStarted(true);
-                          setGitterElements([
-                            ...gitterElements,
+                          setOpenedProjects([
+                            ...openedProjects,
                             {
                               changedFiles: [],
                               parsedDir,
@@ -125,7 +126,7 @@ export default function ProjectCard({
                           dispatch(deleteTerminal({ name: parsedDir }));
                           shellKilled(parsedDir);
                           setIsShellStarted(false);
-                          setGitterElements((state) =>
+                          setOpenedProjects((state) =>
                             state.filter(
                               (element) => element.parsedDir !== parsedDir
                             )
