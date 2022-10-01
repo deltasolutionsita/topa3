@@ -31,3 +31,11 @@ export function getProjectsFileName() {
   const slash = process.platform === "win32" ? "\\" : "/"
   return slash + "projects.txt"
 }
+
+export function getProjectFolderPath(dir: string) {
+  // <path>/_topa3
+  const slash = process.platform === "win32" ? "\\" : "/"
+  const splittedDir = dir.split(slash);
+  splittedDir.splice(splittedDir.length - 1, 1)
+  return splittedDir.join(slash) + slash;
+}

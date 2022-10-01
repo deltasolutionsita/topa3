@@ -19,7 +19,8 @@ import {
 } from '@chakra-ui/react';
 import { AiOutlinePlus } from 'react-icons/ai';
 import DragBox from './DragBox';
-import Gitter from './Gitter';
+import Gitter from './gitter/Gitter';
+import { FiGithub } from 'react-icons/fi';
 
 const NavLink = ({ children }: { children: ReactNode }) => (
   <Link
@@ -57,7 +58,7 @@ export default function Navbar() {
               spacing={4}
               display={{ base: 'none', md: 'flex' }}
             >
-              <Button onClick={() => setIsGitterOpen(true)}>Gitter</Button>
+              <Button leftIcon={<FiGithub />} onClick={() => setIsGitterOpen(true)}>Gitter</Button>
               <NavLink>2</NavLink>
               <NavLink>3</NavLink>
             </HStack>

@@ -8,20 +8,35 @@ import {
   HStack,
   IconButton,
 } from '@chakra-ui/react';
-import { commandsExecuted } from 'renderer/toasts';
-import { FiSettings } from "react-icons/fi";
+import { commandsExecuted, shellKilled } from 'renderer/toasts';
+import { FiSettings } from 'react-icons/fi';
+import { useContext, useState } from 'react';
+import { GitterContext } from './gitter/GitterProvider';
+import { deleteTerminal, voidState } from 'renderer/redux/terminalOutput';
+import { useDispatch } from 'react-redux';
+import { TSContext } from 'renderer/providers/TerminalShown';
 
 interface ProjectCardProps {
   project: { dir: string; commands: string };
   parsedDir: string;
-  openModal: () => void
+  openModal: () => void;
 }
 
-export default function ProjectCard({ project, parsedDir, openModal }: ProjectCardProps) {
+export default function ProjectCard({
+  project,
+  parsedDir,
+  openModal,
+}: ProjectCardProps) {
+  const [openedProjects, setOpenedProjects] = useContext(GitterContext);
+  const [, setTerminalShown, , setDrawerShown] = useContext(TSContext);
+  const [isShellStarted, setIsShellStarted] = useState(false);
+  const dispatch = useDispatch();
+
   return (
     <Center py={6}>
       <Box
         maxW={'330px'}
+        minW={"250px"}
         w={'full'}
         bg={useColorModeValue('white', 'gray.800')}
         boxShadow={'2xl'}
@@ -47,7 +62,7 @@ export default function ProjectCard({ project, parsedDir, openModal }: ProjectCa
               JS
             </Text>
             <Stack direction={'row'} align={'center'} justify={'center'}>
-              <Text fontSize={'4xl'} fontWeight={800}>
+              <Text fontSize={'4xl'}>
                 {parsedDir}
               </Text>
             </Stack>
@@ -55,32 +70,85 @@ export default function ProjectCard({ project, parsedDir, openModal }: ProjectCa
 
           <Box bg={useColorModeValue('gray.50', 'gray.900')} px={6} py={10}>
             <HStack>
-            <Button
-              w={'full'}
-              bg={'teal.400'}
-              color={'white'}
-              rounded={'xl'}
-              boxShadow={'0 5px 20px 0px rgb(0 128 128 / 43%)'}
-              _hover={{
-                bg: 'teal.500',
-              }}
-              _focus={{
-                bg: 'teal.600',
-              }}
-              onClick={() => {
-                window.electron.ipcRenderer
-                  .invoke('start-shell', [project])
-                  .then((r) => {
-                    if (r.message === 'ok') {
-                      commandsExecuted();
-                    } else alert(r.message);
-                  })
-                  .catch((e) => alert(e));
-              }}
-            >
-              Avvia
-            </Button>
-            <IconButton icon={<FiSettings />} aria-label={'Impostazioni'} onClick={() => openModal()} />
+              {!isShellStarted ? (
+                <Button
+                  w={'full'}
+                  bg={'teal.400'}
+                  color={'white'}
+                  rounded={'xl'}
+                  boxShadow={'0 5px 20px 0px rgb(0 128 128 / 43%)'}
+                  _hover={{
+                    bg: 'teal.500',
+                  }}
+                  _focus={{
+                    bg: 'teal.600',
+                  }}
+                  onClick={() => {
+                    window.electron.ipcRenderer
+                      .invoke('start-shell', [project])
+                      .then((r) => {
+                        if (r.message === 'ok') {
+                          commandsExecuted();
+                          setIsShellStarted(true);
+                          setOpenedProjects([
+                            ...openedProjects,
+                            {
+                              changedFiles: [],
+                              parsedDir,
+                              project,
+                            },
+                          ]);
+                        } else alert(r.message);
+                      })
+                      .catch((e) => alert(e));
+                  }}
+                >
+                  Avvia
+                </Button>
+              ) : (
+                <Button
+                  w={'full'}
+                  bg={'red.400'}
+                  color={'white'}
+                  rounded={'xl'}
+                  boxShadow={'0 5px 20px 0px rgb(236 0 0 / 43%)'}
+                  _hover={{
+                    bg: 'red.500',
+                  }}
+                  _focus={{
+                    bg: 'red.600',
+                  }}
+                  onClick={() => {
+                    window.electron.ipcRenderer
+                      .invoke('kill-shell', [parsedDir])
+                      .then(({ message, length }) => {
+                        if (message === 'ok') {
+                          dispatch(deleteTerminal({ name: parsedDir }));
+                          shellKilled(parsedDir);
+                          setIsShellStarted(false);
+                          setOpenedProjects((state) =>
+                            state.filter(
+                              (element) => element.parsedDir !== parsedDir
+                            )
+                          );
+
+                          if (length === 0) {
+                            dispatch(voidState());
+                            setTerminalShown(false);
+                            setDrawerShown(false);
+                          }
+                        }
+                      });
+                  }}
+                >
+                  Termina
+                </Button>
+              )}
+              <IconButton
+                icon={<FiSettings />}
+                aria-label={'Impostazioni'}
+                onClick={() => openModal()}
+              />
             </HStack>
           </Box>
         </>

@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import {
+  getProjectFolderPath,
   getProjectsFileName,
   getStartShellArguments,
   resolveHtmlPath,
@@ -51,8 +52,6 @@ if (isDebug) {
 export const store = configureStore({
   reducer,
 });
-
-// export const shells: ChildProcess[] = []
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -107,21 +106,22 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
-      devTools: false
+      devTools: false,
     },
   });
 
   splashScreen.loadURL(resolveHtmlPath('index.html', true));
   mainWindow.loadURL(resolveHtmlPath('index.html', false));
 
-  splashScreen && splashScreen.on("ready-to-show", () => {
-    if(!splashScreen) throw new Error('"splashScreen" is not defined');
-    if(process.env.START_MINIMIZED) {
-      splashScreen.minimize()
-    } else {
-      splashScreen.show()
-    }
-  })
+  splashScreen &&
+    splashScreen.on('ready-to-show', () => {
+      if (!splashScreen) throw new Error('"splashScreen" is not defined');
+      if (process.env.START_MINIMIZED) {
+        splashScreen.minimize();
+      } else {
+        splashScreen.show();
+      }
+    });
 
   mainWindow &&
     mainWindow.on('ready-to-show', () => {
@@ -201,7 +201,7 @@ ipcMain.handle('start-shell', async (e, arg) => {
   e.preventDefault();
 
   const { commands, dir, projectName } = getStartShellArguments(arg);
-  
+
   const isWindows = process.platform === 'win32';
   const env = !isWindows
     ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
@@ -209,8 +209,7 @@ ipcMain.handle('start-shell', async (e, arg) => {
 
   const shell = _shell
     .cd(dir)
-    .exec(commands, { async: true, env }, (code, _stdout, stderr) => {
-      console.log('Exit code:', code);
+    .exec(commands, { async: true, env }, (_, __, stderr) => {
       console.log('Program stderr:', stderr);
     });
 
@@ -235,19 +234,6 @@ ipcMain.handle('start-shell', async (e, arg) => {
   };
 });
 
-// runningShells.forEach(({ process, projectName }) => {
-//   if(process.stdout) {
-//     process.stdout.on('data', (data) => {
-//       console.log("EXTERNAL PROCESS DATA", typeof data)
-//       mainWindow &&
-//         mainWindow.webContents.send('shell-output', {
-//           terminalData: data,
-//           projectName,
-//         });
-//     });
-//   }
-// })
-
 ipcMain.handle('kill-shell', (_e, arg) => {
   const name = arg[0];
 
@@ -269,6 +255,131 @@ ipcMain.handle('kill-shell', (_e, arg) => {
 ipcMain.handle('open-github', () => {
   shell.openExternal('https://github.com/deltasolutionsita/topa3');
 });
+
+ipcMain.handle('git-commit', (_e, arg) => {
+  const commitMessage = arg[0].commitMessage;
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell
+    .cd(getProjectFolderPath(dir))
+    .exec(
+      `rm -rf ./git/index.lock & git commit -am "${commitMessage}"`,
+      { async: true, env },
+      (code, _, stderr) => {
+        if (code === 0)
+          mainWindow &&
+            mainWindow.webContents.send('git-can-push', {
+              canPush: true,
+            });
+        if (stderr !== '') {
+          mainWindow &&
+            mainWindow.webContents.send('git-can-push', {
+              canPush: false,
+            });
+          mainWindow &&
+            mainWindow.webContents.send('git-commit-error', {
+              error: stderr,
+              name,
+            });
+        }
+      }
+    );
+
+  if (shell.stdout) {
+    shell.stdout.on('data', (out) => {
+      mainWindow &&
+        mainWindow.webContents.send('git-commit-output', {
+          out,
+          name,
+        });
+    });
+  }
+
+  return {
+    message: 'ok',
+    name,
+  };
+});
+
+ipcMain.handle('git-push', (_e, arg) => {
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell
+    .cd(getProjectFolderPath(dir))
+    .exec(`git push`, { async: true, env }, (code, _, stderr) => {
+      if (code === 0 && mainWindow) {
+        mainWindow.webContents.send('git-push-success', {
+          success: true,
+        });
+      }
+      mainWindow &&
+        mainWindow.webContents.send('git-push-output', {
+          name,
+          out: _,
+        });
+      stderr !== '' &&
+        mainWindow?.webContents.send('git-push-output', {
+          out: stderr,
+          name,
+        });
+    });
+
+  if (shell.stdout) {
+    shell.stdout.on('data', (chunk) => {
+      mainWindow &&
+        mainWindow.webContents.send('git-push-output', {
+          name,
+          out: chunk,
+        });
+    });
+  }
+});
+
+ipcMain.handle("git-fp", (_e, arg) => {
+  const { name, dir } = arg[0].project as { name: string; dir: string };
+
+  const isWindows = process.platform === 'win32';
+  const env = !isWindows
+    ? { ...process.env, ...{ PATH: process.env.PATH + ':/usr/local/bin' } }
+    : { ...process.env };
+
+  const shell = _shell.cd(getProjectFolderPath(dir))
+    .exec("git fetch & git pull", { env }, (_, out, error) => {
+      console.log(`err: ${error}`)
+      console.log(`code: ${_}`)
+      
+      mainWindow?.webContents.send("git-fp-out", {
+        out,
+        name
+      })
+      
+      error !== "" && mainWindow?.webContents.send("git-fp-error", {
+        error
+      })
+    })
+
+  shell.stdout?.on("data", (chunk) => {
+    mainWindow?.webContents.send("git-fp-out", {
+      out: chunk,
+      name
+    })
+  })
+
+  return {
+    message: "ok",
+    name
+  }
+})
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

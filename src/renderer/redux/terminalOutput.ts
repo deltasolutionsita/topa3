@@ -36,10 +36,13 @@ const slice = createSlice({
     ) => {
       return state.filter((terminal) => terminal.name !== name);
     },
+    voidState: (state) => {
+      state.length = 0;
+    },
   },
 });
 
-export const { addNewTerminal, addOutput, deleteTerminal } = slice.actions;
+export const { addNewTerminal, addOutput, deleteTerminal, voidState } = slice.actions;
 export default slice.reducer;
 
 export const getTerminalState = createSelector(
