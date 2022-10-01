@@ -17,10 +17,11 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@chakra-ui/react';
-import { AiOutlinePlus } from 'react-icons/ai';
+import { AiOutlineCheckCircle, AiOutlinePlus } from 'react-icons/ai';
 import DragBox from './DragBox';
 import Gitter from './gitter/Gitter';
 import { FiGithub } from 'react-icons/fi';
+import Todo from './todo/Todo';
 
 const NavLink = ({ children }: { children: ReactNode }) => (
   <Link
@@ -41,6 +42,7 @@ export default function Navbar() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGitterOpen, setIsGitterOpen] = useState(false);
+  const [isTodoOpen, setIsTodoOpen] = useState(false);
   
   return (
     <>
@@ -59,7 +61,7 @@ export default function Navbar() {
               display={{ base: 'none', md: 'flex' }}
             >
               <Button leftIcon={<FiGithub />} onClick={() => setIsGitterOpen(true)}>Gitter</Button>
-              <NavLink>2</NavLink>
+              <Button leftIcon={<AiOutlineCheckCircle />} onClick={() => setIsTodoOpen(true)}>ToDo</Button>
               <NavLink>3</NavLink>
             </HStack>
           </HStack>
@@ -95,6 +97,7 @@ export default function Navbar() {
         </ModalContent>
       </Modal>
       <Gitter isOpen={isGitterOpen} onClose={() => setIsGitterOpen(false)} />
+      <Todo isOpen={isTodoOpen} onClose={() => setIsTodoOpen(false)} />
     </>
   );
 }

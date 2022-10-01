@@ -19,6 +19,7 @@ import GitterProvider from './components/gitter/GitterProvider';
 import Navbar from './components/Navbar';
 import ProjectDashboard from './components/ProjectDashboard';
 import TerminalOutput from './components/TerminalOutput';
+import TodoProvider from './components/todo/TodoProvider';
 import TerminalShown from './providers/TerminalShown';
 import { store } from './redux';
 import SplashScreen from './splashscreen/SplashScreen';
@@ -75,14 +76,16 @@ const Main = () => {
       <>
         <TerminalShown>
           <GitterProvider>
-            <Navbar />
-            <Box mt="-2%">
-              <Heading textAlign={'left'} mt="5%" ml="5%">
-                I tuoi progetti
-              </Heading>
-              <ProjectDashboard />
-              <TerminalOutput />
-            </Box>
+            <TodoProvider>
+              <Navbar />
+              <Box mt="-2%">
+                <Heading textAlign={'left'} mt="5%" ml="5%">
+                  I tuoi progetti
+                </Heading>
+                <ProjectDashboard />
+                <TerminalOutput />
+              </Box>
+            </TodoProvider>
           </GitterProvider>
         </TerminalShown>
       </>
